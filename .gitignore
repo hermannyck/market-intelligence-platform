@@ -4,6 +4,8 @@ __pycache__/
 .venv/
 *.egg-info/
 .pytest_cache/
+.coverage
+htmlcov/
 
 # Node / frontend
 node_modules/

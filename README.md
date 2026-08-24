@@ -26,9 +26,8 @@ tracks what's actually built.
 
 ## Status
 
-Currently on **Phase 15 — Historical replay mode**. See `docs/architecture.md` for the
-module map and the full 16-phase roadmap. Each phase is built and verified before the next
-begins.
+**All 16 phases are complete.** See `docs/architecture.md` for the module map and
+`CHANGELOG.md` for a phase-by-phase summary of what was actually delivered and found.
 
 | Phase | Status |
 |---|---|
@@ -47,19 +46,20 @@ begins.
 | 13. Backend API (real endpoints) | ✅ done |
 | 14. React dashboard (real data) | ✅ done |
 | 15. Historical replay mode | ✅ done |
-| 16. Testing and documentation | not started |
+| 16. Testing and documentation | ✅ done |
 
 ## Project layout
 
 ```
 backend/    FastAPI app (app/api, models, services, ml, features, sentiment, regime,
-            backtesting, validation, explainability, database)
-frontend/   React + TypeScript + Vite dashboard
+            backtesting, validation, explainability, database) + backend/tests/
+frontend/   React + TypeScript + Vite dashboard + frontend/src/utils/*.test.ts (Vitest)
 data/       raw/ processed/ features/ news/  (raw/ is never overwritten)
 models/     trained model artifacts (Phase 7+)
 notebooks/  exploratory analysis
 tests/      cross-cutting/integration tests
-docs/       architecture, data sources, leakage-prevention decisions, model card
+docs/       architecture, data sources, leakage-prevention decisions, model card, testing
+CHANGELOG.md  phase-by-phase summary of what was built and found
 ```
 
 ## Running it
@@ -72,7 +72,8 @@ python -m venv .venv
 .venv\Scripts\pip install torch --index-url https://download.pytorch.org/whl/cpu  # first, separately (Phase 10)
 .venv\Scripts\pip install -r requirements.txt   # Windows
 set DATABASE_URL=sqlite:///./dev.db             # local dev fallback -- see Database section below
-pytest                                           # 150+ tests (a few are @pytest.mark.slow -- real FinBERT/SHAP inference)
+pytest                                           # 160 tests (a few are @pytest.mark.slow -- real FinBERT/SHAP inference)
+pytest --cov=app --cov-report=term-missing       # 91% statement coverage -- see docs/testing.md
 uvicorn app.main:app --reload                    # serves http://127.0.0.1:8000 -- see /docs for the full API
 ```
 
@@ -85,7 +86,8 @@ asset/timeframe/model selectors driving every page, 6 Recharts components). On W
 cd frontend
 npm install
 npm run build   # type-checks + production build
-npm run dev      # serves http://127.0.0.1:5173 — login/register -> 8 real data-driven pages
+npm run test     # Vitest (Phase 16) -- unit tests for src/utils/replayFrames.ts
+npm run dev      # serves http://127.0.0.1:5173 — login/register -> 9 real data-driven pages
 ```
 
 **Data ingestion** (Phase 2 — pulls EUR/USD, BTC/USD, XAU/USD across M15/H1/D1 into
@@ -215,14 +217,13 @@ works identically either way.
 **React dashboard** (Phase 14 — all 8 nav pages wired to the real Phase 13 API: candlestick +
 indicator charts, predictions with consensus, SHAP explainability, model lab, walk-forward
 report, backtest equity curve + trade log, news sentiment timeline). Verified with a full
-manual click-through against real generated data (zero console errors); no automated frontend
-test suite (a deliberate scope decision, see `docs/architecture.md`'s Frontend structure
-section). **Phase 15 adds a 9th page, Historical Replay** — step or auto-play bar-by-bar
-through the walk-forward out-of-sample signal history for the selected asset/timeframe/model,
-watching the price chart, model signal, regime, and equity curve unfold together. Restricted by
-construction to bars with a genuine OOS signal — see `docs/leakage_prevention.md`'s Phase 15
-entry for why. Requires a Phase 15-or-later backtest report (re-run the command above if yours
-predates it).
+manual click-through against real generated data (zero console errors); see `docs/testing.md`
+for what is and isn't covered by the Vitest suite Phase 16 added. **Phase 15 adds a 9th page,
+Historical Replay** — step or auto-play bar-by-bar through the walk-forward out-of-sample
+signal history for the selected asset/timeframe/model, watching the price chart, model signal,
+regime, and equity curve unfold together. Restricted by construction to bars with a genuine OOS
+signal — see `docs/leakage_prevention.md`'s Phase 15 entry for why. Requires a Phase 15-or-later
+backtest report (re-run the command above if yours predates it).
 
 ```bash
 cd backend

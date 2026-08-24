@@ -62,7 +62,7 @@ dashboard route either. **No Historical Replay-specific endpoint either** (Phase
 replay page composes the existing `market-analysis` and `backtesting` responses client-side;
 see the Frontend structure section below.
 
-## Frontend structure (Phase 1 scaffold, Phase 14 real data, Phase 15 replay mode)
+## Frontend structure (Phase 1 scaffold, Phase 14 real data, Phase 15 replay mode, Phase 16 tests)
 
 React + TypeScript + Vite. `src/services/navConfig.ts` is the single source of truth for the
 8 nav items (Section 13) plus the asset/timeframe/model selector options — pages and the
@@ -87,10 +87,12 @@ accepted any input).
 - Design tokens (`index.css`) follow the project's `dataviz` skill palette — light/dark aware
   CSS custom properties (`--series-1..8`, `--status-good/warning/serious/critical`, etc.),
   BUY/HOLD/SELL always rendered as colored badges, never color-only.
-- No frontend automated test suite — a deliberate scope decision (matching the sibling
-  `forex-signal-predictor` project's own explicit choice for the same reason); verification for
-  this phase was a full manual click-through of all 8 pages against the real backend and real
-  generated data, checked for console errors at every step.
+- Phase 14 itself shipped with no frontend automated test suite — a deliberate scope decision
+  (matching the sibling `forex-signal-predictor` project's own explicit choice for the same
+  reason); verification for this phase was a full manual click-through of all 8 pages against
+  the real backend and real generated data, checked for console errors at every step. Phase 16
+  later added a first, narrowly-scoped Vitest suite once Phase 15 demonstrated a concrete need
+  for one — see `docs/testing.md`.
 - **`src/pages/ReplayPage.tsx` (Phase 15) — Historical Replay Mode**, a 9th page beyond the
   spec's 8-page nav. Fetches `market-analysis` (a large `limit`) and `backtesting` (which now
   also returns the full per-bar `signals` series — see Backend API above) for the current
@@ -101,6 +103,12 @@ accepted any input).
   speed) is plain `useState`/`useEffect` with a `setInterval` driving the index forward — no new
   library. Reuses `CandlestickChart` (a rolling window ending at the current frame) and
   `EquityCurveChart` (progressively revealed) rather than introducing new chart components.
+- **`src/utils/replayFrames.ts` (Phase 16)** — `ReplayPage`'s bar/signal/trade/equity join logic,
+  extracted out of the page component specifically so it can be unit-tested without rendering
+  anything or mocking `fetch`. `replayFrames.test.ts` (Vitest) pins down the exact timestamp-
+  format-mismatch bug Phase 15 hit live, plus filtering/sorting/event-attachment behavior — see
+  `docs/testing.md` for the full rationale and what this suite deliberately does not attempt to
+  cover (no component/DOM tests).
 
 ## Phase roadmap
 

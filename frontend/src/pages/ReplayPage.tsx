@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../api/client";
-import type { Bar, BacktestResponse, MarketAnalysisResponse, TargetLabel, Trade } from "../api/types";
+import type { BacktestResponse, MarketAnalysisResponse, Trade } from "../api/types";
 import { useApiData } from "../hooks/useApiData";
 import { useSelection } from "../hooks/useSelection";
 import AsyncState from "../components/AsyncState";
 import SignalBadge from "../components/SignalBadge";
 import CandlestickChart from "../charts/CandlestickChart";
 import EquityCurveChart from "../charts/EquityCurveChart";
+import { buildFrames, type ReplayFrame } from "../utils/replayFrames";
 
 // How many of the most recent bars a market-analysis fetch needs to cover. Must exceed the
 // FULL row count of every asset/timeframe combo's features file, not just its walk-forward
@@ -29,49 +30,6 @@ const SPEED_OPTIONS = [
   { ms: 500, label: "2x" },
   { ms: 200, label: "4x" },
 ];
-
-interface ReplayFrame {
-  bar: Bar;
-  signal: TargetLabel;
-  equity: number | null;
-  openedTrade: Trade | null;
-  closedTrade: Trade | null;
-}
-
-/** Builds the replay timeline: only bars that carry a genuine walk-forward out-of-sample
- * signal are included (see the on-page note and docs/leakage_prevention.md's Phase 15 entry) --
- * this is a straight client-side join of two already-fetched, already-verified-leak-free
- * responses by timestamp, no new computation.
- *
- * The two responses format timestamps differently on the wire -- market-analysis's bars go
- * through pandas' own `to_json(date_format="iso")` (e.g. "2022-01-03T05:00:00.000Z"), while the
- * backtest report's signals/trades/equity_curve go through plain `str(pd.Timestamp)` (e.g.
- * "2022-01-03 05:00:00+00:00"). Same instant, different strings -- so every key below is
- * normalized to epoch milliseconds via `Date.parse` before joining, never compared as raw
- * strings. */
-function ts(value: string): number {
-  return Date.parse(value);
-}
-
-function buildFrames(market: MarketAnalysisResponse, backtest: BacktestResponse): ReplayFrame[] {
-  // Defensive: a backtest report saved before Phase 15 won't have a "signals" field at all
-  // (the "never overwrite" convention means old report files stay on disk as-is).
-  const signalByTs = new Map((backtest.signals ?? []).map((s) => [ts(s.timestamp), s.signal]));
-  const equityByTs = new Map(backtest.equity_curve.map((e) => [ts(e.timestamp), e.equity]));
-  const openedByTs = new Map(backtest.trades.map((t) => [ts(t.entry_time), t]));
-  const closedByTs = new Map(backtest.trades.map((t) => [ts(t.exit_time), t]));
-
-  return market.bars
-    .filter((b) => signalByTs.has(ts(b.timestamp)))
-    .sort((a, b) => ts(a.timestamp) - ts(b.timestamp))
-    .map((bar) => ({
-      bar,
-      signal: signalByTs.get(ts(bar.timestamp)) as TargetLabel,
-      equity: equityByTs.get(ts(bar.timestamp)) ?? null,
-      openedTrade: openedByTs.get(ts(bar.timestamp)) ?? null,
-      closedTrade: closedByTs.get(ts(bar.timestamp)) ?? null,
-    }));
-}
 
 export default function ReplayPage() {
   const { asset, timeframe, model } = useSelection();

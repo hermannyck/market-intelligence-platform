@@ -17,6 +17,9 @@ bcrypt==5.0.0
 email-validator==2.2.0
 pytest==8.3.4
 httpx==0.28.1
+# Phase 16: coverage reporting (pytest --cov=app --cov-report=term-missing). See
+# docs/testing.md for the real coverage number and what's intentionally excluded.
+pytest-cov==6.0.0
 
 # Phase 2: historical data ingestion
 # pandas/numpy pins were originally 2.2.3/2.1.3 -- bumped to satisfy pandas-ta's actual

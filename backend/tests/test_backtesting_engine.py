@@ -91,6 +91,34 @@ def test_run_backtest_requires_ohlc_atr_columns():
         engine.run_backtest(df, pd.Series(["BUY"], index=df.index), "EURUSD")
 
 
+def test_run_backtest_requires_sorted_ascending_dataset():
+    # Phase 16: the engine's own guard against a caller passing an out-of-order dataset -- the
+    # intrabar SL/TP scan (simulate_trade) depends on row position meaning chronological order.
+    df = _ohlc_df(5, close=[100, 101, 102, 103, 104], atr=1.0).iloc[::-1]  # reversed, still ascending index labels
+    with pytest.raises(ValueError, match="sorted ascending"):
+        engine.run_backtest(df, pd.Series(["BUY"] * 5, index=df.index), "EURUSD")
+
+
+def test_run_backtest_skips_signal_at_a_timestamp_not_in_the_dataset():
+    # Phase 16: a `predictions` Series is allowed to carry timestamps the OHLC dataset doesn't
+    # have (e.g. from a different resample) -- these must be silently skipped, not KeyError.
+    df = _ohlc_df(5, close=[100] * 5, atr=1.0)
+    stray_ts = pd.Timestamp("2099-01-01", tz="UTC")
+    preds = pd.Series(["BUY"], index=[stray_ts])
+    result = engine.run_backtest(df, preds, "EURUSD", config=_cfg())
+    assert result["summary"]["num_trades"] == 0
+
+
+def test_run_backtest_skips_signal_with_invalid_atr_or_price():
+    # Phase 16: a NaN/non-positive ATR or close at the signal bar can't size a stop -- the
+    # engine must skip that one signal (not crash, not open a trade with a nonsensical stop).
+    df = _ohlc_df(3, close=[100, 100, 100], atr=1.0)
+    df.loc[df.index[0], "ATR14"] = float("nan")
+    preds = pd.Series(["BUY", "HOLD", "HOLD"], index=df.index)
+    result = engine.run_backtest(df, preds, "EURUSD", config=_cfg())
+    assert result["summary"]["num_trades"] == 0
+
+
 def test_run_backtest_skips_hold_and_out_of_range_predictions():
     df = _ohlc_df(10, close=[100 + i * 0.01 for i in range(10)], atr=1.0)
     preds = pd.Series(["HOLD"] * 10, index=df.index)

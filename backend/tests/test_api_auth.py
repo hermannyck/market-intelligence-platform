@@ -9,6 +9,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.api.deps import get_db
+from app.auth.security import create_access_token
 from app.database import models  # noqa: F401 - registers User on Base.metadata
 from app.database.session import Base
 from app.main import app
@@ -78,3 +79,15 @@ def test_me_with_garbage_token_is_unauthorized(client):
 def test_register_rejects_short_password(client):
     response = client.post("/api/auth/register", json={"email": "user3@example.com", "password": "short"})
     assert response.status_code == 422
+
+
+def test_me_with_validly_signed_token_for_deleted_user_is_unauthorized(client):
+    """Phase 16: a JWT can be structurally valid (correctly signed, unexpired) but its subject
+    no longer maps to any row in `users` -- e.g. the account was deleted after the token was
+    issued. `get_current_user` must reject this the same as any other unauthenticated request,
+    not raise an unhandled error trying to use a None user. This is a distinct code path from
+    `test_me_with_garbage_token_is_unauthorized` (that one fails at signature verification;
+    this one passes verification and fails at the DB lookup)."""
+    token = create_access_token(subject="never-registered@example.com")
+    response = client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 401

@@ -113,7 +113,13 @@ class TestRealData:
     def test_backtesting_real(self):
         response = client.get("/api/backtesting/XAUUSD/D1/svm")
         assert response.status_code == 200
-        assert response.json()["summary"]["num_trades"] > 0
+        body = response.json()
+        assert body["summary"]["num_trades"] > 0
+        # Phase 15: the full per-bar OOS signal series must reach the HTTP layer too, not just
+        # the pipeline that writes the report file -- and every trade must trace back to one.
+        assert len(body["signals"]) >= body["num_oos_predictions"]
+        signal_timestamps = {s["timestamp"] for s in body["signals"]}
+        assert all(t["entry_time"] in signal_timestamps for t in body["trades"])
 
     def test_performance_by_regime_real(self):
         response = client.get("/api/backtesting/XAUUSD/D1/svm/performance-by-regime")
