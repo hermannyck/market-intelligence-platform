@@ -122,8 +122,39 @@ structurally, in anticipation of later phases:
 - **Regime and sentiment are deliberately absent from this schema**, not stubbed with NaN
   placeholders — see `data/features/README.md`. Phase 9/10 extend the schema when those
   modules exist, rather than this phase guessing at a shape for data that doesn't exist yet.
-- Phase 6 (target generation): the exact leakage boundary between feature columns and the
-  future-return-derived label.
+## Phase 6 (target generation)
+
+- **The exact leakage boundary, stated precisely**: `target[t]` is a function of exactly
+  `close[t]`, `close[t + horizon_bars]`, and `ATR14[t]/close[t]` — nothing else. Verified
+  directly by `test_target_depends_only_on_exactly_horizon_bars_ahead`, which builds two
+  datasets identical through row `t + horizon_bars` but diverging afterward, and asserts
+  `target[t]` is bit-identical between them for every row whose defining window lies entirely
+  in the shared prefix.
+- **Volatility-adjusted threshold, not a fixed one** — `threshold[t] = volatility_multiplier *
+  ATR14[t]/close[t]`, reusing Phase 4's already-verified-causal ATR rather than computing a
+  second, redundant volatility measure. A fixed cutoff (e.g. "> 0.1%") would mean something
+  completely different for EUR/USD (~0.1-0.5%/day moves) than BTC/USD (several %/day) — using
+  each row's own normalized volatility avoids exactly the "arbitrary thresholds and excessive
+  class imbalance" risk the spec calls out. Confirmed on the real data: no run out of 12
+  (asset x timeframe) came back flagged `is_imbalanced` (dominant class > 80%) — see
+  `class_balance_report` in every labeled manifest.
+- **Real finding**: HOLD turned out to be the *minority* class everywhere (15-23% across all
+  12 real combinations), not the dominant one as might be assumed — at horizon_bars=12 with a
+  0.5x-ATR threshold, price moves past the threshold in one direction or the other more often
+  than it stays within it. BUY/SELL came out fairly balanced against each other too (e.g. EUR/
+  USD D1: BUY 40.5% / HOLD 18.9% / SELL 40.6%). This is a property of the current
+  `TARGET.horizon_bars=12, TARGET.volatility_multiplier=0.5` configuration, not a fixed
+  outcome — changing either in `app.config.TARGET` will shift this balance, which is exactly
+  why both are configurable rather than hardcoded.
+- **Horizon is bars, not wall-clock time** — 12 bars of D1 skips weekends automatically
+  (gaps aren't rows), giving a "12 trading-bars ahead" horizon rather than a fixed calendar
+  span. Intentional, standard TA convention, documented in the module docstring.
+- **Trailing rows are NaN, never fabricated.** The last `horizon_bars` rows of every dataset
+  have no future bar yet; `target`/`future_return` stay NaN for them (not dropped here, not
+  filled) — Phase 7 decides how to handle rows with no target when assembling training data.
+
+## To be filled in by later phases
+
 - Phase 7 (models): confirmation that `StandardScaler`/other preprocessing is fit only on
   each walk-forward window's training fold, never on test data or the full dataset.
 - Phase 9 (regime detection): confirmation regime labels at time *t* use no data after *t*.

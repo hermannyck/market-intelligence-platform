@@ -14,9 +14,16 @@ Every column is computed using only information available at that row's timestam
   (each an as-of lookup, never peeking at a not-yet-closed bar — see
   `docs/leakage_prevention.md`'s Phase 5 entry) and the majority-vote `mtf_bias`
 
+- Target label (Phase 6, `backend/app/ml/target.py`): `future_return`, `target_threshold`,
+  and `target` (BUY/HOLD/SELL) — see `docs/leakage_prevention.md`'s Phase 6 entry for the
+  exact leakage boundary. **"Latest" file per (asset, timeframe) is always the most complete
+  one** — once Phase 6 runs, the latest file includes the target; a consumer just wants
+  whatever's newest, same convention as `data/raw/`/`data/processed/`.
+
 **Not yet included**: market regime (Phase 9) and news sentiment (Phase 10). These will
 extend this schema via a timestamp+asset join once those modules exist, rather than this
 phase guessing at their shape ahead of time.
 
-Every manifest's `source_processed_manifests` traces back to the exact `data/processed/`
-files (all 4 timeframes, since multi-timeframe bias needs them all) used to build it.
+Every manifest's `source_processed_manifests` (or, for labeled files, `source_features_manifest`)
+traces back to the exact upstream file(s) used to build it — full provenance chain back to the
+original raw pull.

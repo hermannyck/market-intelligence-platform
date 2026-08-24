@@ -36,7 +36,7 @@ map and the full 16-phase roadmap. Each phase is built and verified before the n
 | 3. Data cleaning and EDA | ✅ done |
 | 4. Five technical indicators | ✅ done |
 | 5. Feature engineering | ✅ done |
-| 6. Target generation | not started |
+| 6. Target generation | ✅ done |
 | 7. Baseline ML models | not started |
 | 8. Walk-forward validation | not started |
 | 9. Market regime detection | not started |
@@ -108,7 +108,16 @@ cd backend
 .venv\Scripts\python -m app.features.feature_engineering
 ```
 
-**Database** (not required until Phase 6+)
+**Target generation** (Phase 6 — configurable forward-horizon, volatility-adjusted
+BUY/HOLD/SELL label appended on top of `data/features/`). See `docs/leakage_prevention.md`
+for the exact leakage boundary between features and the label.
+
+```bash
+cd backend
+.venv\Scripts\python -m app.ml.target
+```
+
+**Database** (not required until Phase 7+)
 
 ```bash
 docker compose up -d postgres

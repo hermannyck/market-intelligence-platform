@@ -49,6 +49,22 @@ class TimeframeData:
     source_manifest: Path
 
 
+def find_latest_features(asset_key: str, timeframe: Timeframe) -> tuple[pd.DataFrame, Path]:
+    """Latest data/features/ file for (asset, timeframe) -- "latest" naturally means "most
+    complete" here too, same convention as find_latest_processed/find_latest_raw: once Phase 6
+    starts saving labeled versions into this same directory, the latest file is the one with
+    a target column, without any consumer needing to know that Phase 6 exists."""
+    manifests = sorted(FEATURES_DIR.glob(f"{asset_key}_{timeframe.value}_*.manifest.json"))
+    if not manifests:
+        raise FileNotFoundError(
+            f"No feature data for {asset_key} {timeframe.value} in {FEATURES_DIR}. "
+            "Run `python -m app.features.feature_engineering` first."
+        )
+    manifest_path = manifests[-1]
+    parquet_path = manifest_path.with_suffix("").with_suffix(".parquet")
+    return pd.read_parquet(parquet_path), manifest_path
+
+
 def find_latest_processed(asset_key: str, timeframe: Timeframe) -> tuple[pd.DataFrame, Path]:
     manifests = sorted(PROCESSED_DIR.glob(f"{asset_key}_{timeframe.value}_*.manifest.json"))
     if not manifests:
