@@ -308,3 +308,43 @@ structurally, in anticipation of later phases:
   `app.config.EXPLAIN` caps both the background size and how many rows get explained per SVM
   run — every row that IS explained still gets a real, un-approximated SHAP computation; the
   cap only limits *how many* rows, never the quality of any individual explanation.
+
+## Phase 12 (backtesting engine)
+
+- **The engine never sees `target` or `future_return`, enforced structurally, not just by
+  convention.** `run_backtest` only requires `open`/`high`/`low`/`close`/`ATR14` from its
+  `dataset` argument (`REQUIRED_COLUMNS`) — it has no code path that reads a `target` or
+  `future_return` column even if those columns happen to be present. Verified directly by
+  `test_run_backtest_ignores_target_and_future_return_columns`, which runs the same predictions
+  through two datasets — one with deliberately misleading `target`/`future_return` values added,
+  one without those columns at all — and asserts byte-identical output.
+- **Predictions are genuinely out-of-sample, not just "not literally the label."**
+  `app.validation.walk_forward.generate_oos_predictions` retrains a fresh Pipeline per
+  walk-forward window (same fit-on-train-only discipline as Phase 7/8) and only keeps that
+  window's *test*-period predictions — a bar is only ever "predicted" by a model that had no
+  access to it (or anything after it) during training. This is what makes the backtest a
+  legitimate simulation of "what a live system would actually have signaled at each historical
+  point," not a hindsight-informed replay. Verified by
+  `test_generate_oos_predictions_covers_only_resolved_test_windows`, which checks every
+  predicted timestamp falls inside some window's test period.
+- **Position sizing is notional (unleveraged), a deliberate choice over risk-based sizing.**
+  Risk-based sizing (sizing a position so a stop-loss hit costs exactly `position_size_pct` of
+  equity) implies leverage that scales inversely with stop distance — for this project's
+  typical ATR-based stops (~1-3% of price), that works out to roughly 3-10x leverage, which can
+  compound into unrealistic equity swings across many trades. Notional sizing
+  (`position_size_pct` of equity invested, unleveraged) is safer and more in keeping with
+  "simplified" (spec Section 11's own word for this engine) — documented explicitly in
+  `app.config.BacktestConfig.position_size_pct`'s docstring so the choice isn't silently
+  assumed.
+- **Intrabar stop-loss/take-profit uses each subsequent bar's real high/low**, not just close —
+  a position that would have been stopped out mid-bar is recorded as stopped out, not carried
+  forward as if the bar's close were the only price that existed. When a single bar's range
+  breaches both the stop and the target (no intrabar tick data to resolve the true order),
+  stop-loss is assumed to trigger first — a conservative, documented assumption, verified by
+  `test_simulate_trade_conservative_tie_prefers_stop_loss`.
+- **Full (not NaN-dropped) OHLC data is used for the intrabar scan, deliberately.** The engine
+  takes `find_latest_features`'s raw output, not `app.ml.models.prepare_dataset`'s NaN-dropped
+  version — dropping rows with any missing indicator would punch artificial gaps into the bar
+  sequence the stop-loss/take-profit scan depends on. `predictions`' own index (which *is*
+  built from `prepare_dataset`'d walk-forward windows) still governs which bars are eligible to
+  open a trade; only the scanning substrate needs to stay continuous.

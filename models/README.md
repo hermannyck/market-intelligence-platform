@@ -21,3 +21,11 @@ hand-edited.
   features with signed SHAP values) — see `docs/leakage_prevention.md`'s Phase 11 entry for
   the explainer choice per model (TreeExplainer for RF/XGBoost, LinearExplainer for LR,
   KernelExplainer for SVM) and why SVM's explanations are capped to a small sample size.
+- `{asset}_{timeframe}_{model}_backtest_{stamp}.json` — Phase 12's real backtest: initial
+  capital, position sizing, transaction costs, spread, and ATR-based stop-loss/take-profit
+  (all under `backtest_config`), the resulting trade log, a per-bar equity curve, and a
+  `summary` (total return, win rate, profit factor, Sharpe ratio, max drawdown, trade count,
+  average trade return). Driven entirely by `app.validation.walk_forward.generate_oos_predictions`
+  (genuinely out-of-sample — never the true `target`) — see `docs/leakage_prevention.md`'s
+  Phase 12 entry. This is the realistic counterpart to Phase 8's simplified trading
+  diagnostic, which already showed why costs/sizing/risk management matter.

@@ -174,8 +174,14 @@ DEFAULT_WALK_FORWARD_WINDOWS: tuple[WalkForwardWindow, ...] = (
 @dataclass(frozen=True)
 class BacktestConfig:
     initial_capital: float = 10_000.0
-    position_size_pct: float = 0.10   # fraction of equity risked per trade
-    transaction_cost_pct: float = 0.0005  # 5 bps per side
+    # Fraction of current equity ALLOCATED (invested notional) per trade -- not leveraged, and
+    # not "risked" in the risk-based-sizing sense (the actual loss at a stop-loss hit is
+    # smaller than this, proportional to the stop distance). Chosen deliberately over
+    # risk-based sizing (which would size the position so the stop-loss loss equals exactly
+    # this fraction) to avoid the implicit leverage that produces -- see
+    # docs/leakage_prevention.md's Phase 12 entry for the full rationale.
+    position_size_pct: float = 0.10
+    transaction_cost_pct: float = 0.0005  # commission, charged on both entry and exit (round-trip)
     spread_pips: dict[str, float] = field(default_factory=lambda: {
         "EURUSD": 1.0, "BTCUSD": 0.0, "XAUUSD": 0.3,
     })
@@ -184,6 +190,11 @@ class BacktestConfig:
 
 
 BACKTEST = BacktestConfig()
+
+# Price value of one "pip" per asset, for converting BACKTEST.spread_pips into a fractional
+# price cost. BTC/USD has no real pip convention; its spread is configured as 0.0 above, so
+# this value is an unused placeholder for that asset.
+PIP_SIZE: dict[str, float] = {"EURUSD": 0.0001, "BTCUSD": 1.0, "XAUUSD": 0.01}
 
 
 # ---------------------------------------------------------------------------

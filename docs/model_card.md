@@ -142,3 +142,39 @@ columns and news sentiment rarely crack the top 5 (an exception: SVM models on H
 on `D1_direction`/`H4_direction` than the other models do) — consistent with Phase 5's finding
 that multi-timeframe coverage itself is sparse for older history, and Phase 10's finding that
 sentiment coverage is sparse everywhere except recent M15 history.
+
+## Phase 12 update — the real backtest engine (Phase 8's diagnostic, corrected)
+
+Ran `backend/app/backtesting/pipeline.py` on all 48 combinations, driven by genuinely
+out-of-sample walk-forward predictions (never the true label — see
+`docs/leakage_prevention.md`'s Phase 12 entry). Full reports:
+`models/{asset}_{timeframe}_{model}_backtest_*.json`.
+
+**Headline result: only 6 of 48 combinations were net profitable once real transaction costs,
+spread, and ATR-based stop-loss/take-profit are simulated.** The other 42 lost money over
+their walk-forward test period. Losses are heaviest on the highest-frequency timeframes
+(M15/H1 generate hundreds to ~1,500 trades per combination — e.g. EUR/USD H1 lost ~14-15%
+across all 4 models), where transaction costs compound over many small trades; D1/H4 (fewer,
+larger trades) fared noticeably better.
+
+**The XAU/USD D1 SVM standout, before and after realistic costs — the clearest illustration
+in this whole project of why Phase 8's diagnostic needed a Phase 12 to correct it:**
+
+| Metric | Phase 8 simplified diagnostic | Phase 12 real backtest |
+|---|---|---|
+| Win rate | 60.2% | 43.0% |
+| Profit factor | 1.70 | 1.22 |
+| Total / mean cumulative return | **+815%** (mean across windows) | **+2.9%** |
+| Max drawdown | -65.4% | -2.8% |
+| Sharpe ratio (trade-level) | 0.19 | 0.09 |
+
+The real engine still finds a genuine, small edge (profit factor > 1, positive total return)
+— it isn't that the earlier finding was fake, it's that the earlier diagnostic's zero-cost,
+full-notional, no-stop-loss assumptions inflated an honest small edge into a fantastical
+headline number. This is exactly the "clearly distinguish ML performance from trading
+performance" the spec asks for (Section 11), made concrete with real numbers rather than
+asserted abstractly.
+
+**A handful of real bright spots** worth naming: BTC/USD H4 (Random Forest +3.2%, XGBoost
++4.7%), XAU/USD D1 (Logistic Regression +4.6%, SVM +2.9%). All six profitable combinations sit
+on H4 or D1 — none on M15 or H1, reinforcing the transaction-cost-drag pattern above.

@@ -43,7 +43,7 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import roc_auc_score
 
-from app.config import ASSETS, DEFAULT_WALK_FORWARD_WINDOWS, TIMEFRAMES, Timeframe, WalkForwardWindow
+from app.config import ASSETS, DEFAULT_WALK_FORWARD_WINDOWS, ModelName, TIMEFRAMES, Timeframe, WalkForwardWindow
 from app.features.feature_engineering import find_latest_features
 from app.ml.models import (
     ALL_FEATURE_COLUMNS,
@@ -251,6 +251,34 @@ def save_walk_forward_report(
     }
     path.write_text(json.dumps(report, indent=2))
     return path
+
+
+def generate_oos_predictions(asset_key: str, timeframe: Timeframe, model_name: ModelName) -> pd.Series:
+    """Out-of-sample predictions across every resolved walk-forward window, for one model.
+    Each test-period prediction comes from a Pipeline trained ONLY on that window's prior
+    training data -- exactly "predictions generated from information available at that time"
+    (spec Section 11), which is what Phase 12's backtest engine needs as its input instead of
+    the true `target` label. Concatenated across windows, indexed by timestamp; bars not
+    covered by any resolved window's test period (e.g. the very first window's whole training
+    span) are simply absent, not backfilled with anything.
+    """
+    features_df, _ = find_latest_features(asset_key, timeframe)
+    dataset = prepare_dataset(features_df)
+    resolved = resolve_windows(dataset)
+
+    predictions = []
+    for w in resolved:
+        train, test = window_slices(dataset, w["window"])
+        X_train, y_train = train[ALL_FEATURE_COLUMNS], encode_labels(train["target"])
+        pipeline = build_pipelines()[model_name]
+        pipeline.fit(X_train, y_train)
+        y_pred = decode_labels(pipeline.predict(test[ALL_FEATURE_COLUMNS]))
+        predictions.append(pd.Series(y_pred, index=test.index))
+
+    if not predictions:
+        return pd.Series(dtype=object)
+    combined = pd.concat(predictions).sort_index()
+    return combined[~combined.index.duplicated(keep="last")]
 
 
 def run_walk_forward(asset_key: str, timeframe: Timeframe) -> dict:

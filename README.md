@@ -26,7 +26,7 @@ tracks what's actually built.
 
 ## Status
 
-Currently on **Phase 11 — SHAP explainability**. See `docs/architecture.md` for the module
+Currently on **Phase 12 — Backtesting**. See `docs/architecture.md` for the module
 map and the full 16-phase roadmap. Each phase is built and verified before the next begins.
 
 | Phase | Status |
@@ -42,7 +42,7 @@ map and the full 16-phase roadmap. Each phase is built and verified before the n
 | 9. Market regime detection | ✅ done |
 | 10. News sentiment (FinBERT) | ✅ done |
 | 11. SHAP explainability | ✅ done |
-| 12. Backtesting | not started |
+| 12. Backtesting | ✅ done |
 | 13. Backend API (real endpoints) | not started |
 | 14. React dashboard (real data) | not started |
 | 15. Historical replay mode | not started |
@@ -167,7 +167,17 @@ cd backend
 .venv\Scripts\python -m app.explainability.pipeline
 ```
 
-**Database** (not required until Phase 12+)
+**Backtesting** (Phase 12 — the real engine: configurable capital, notional position sizing,
+transaction costs, spread, intrabar ATR-based stop-loss/take-profit, driven by genuinely
+out-of-sample walk-forward predictions, never the true label). Distinct from Phase 8's
+simplified trading diagnostic — see `docs/leakage_prevention.md`'s Phase 12 entry.
+
+```bash
+cd backend
+.venv\Scripts\python -m app.backtesting.pipeline
+```
+
+**Database** (not required until Phase 13+)
 
 ```bash
 docker compose up -d postgres

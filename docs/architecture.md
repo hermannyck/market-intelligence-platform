@@ -19,8 +19,8 @@ real-money trading, or high-frequency trading.
 | `sentiment/` | News data interface (`news_data.py`) + FinBERT scoring (`finbert.py`) + timestamp-aware windowed aggregation/orchestration (`pipeline.py`) | Phase 10 |
 | `regime/` | Market regime detection (`detector.py`: rule-based classifier + exploratory KMeans comparison, `pipeline.py`: orchestration) | Phase 9 |
 | `explainability/` | SHAP global/local explanations (`shap_explainer.py`: explainer construction + one-hot aggregation; `pipeline.py`: orchestration) | Phase 11 |
-| `backtesting/` | Historical backtest engine | Phase 12 |
-| `validation/` | Walk-forward validation (`walk_forward.py`): configured-vs-fallback window resolution, per-window ML + simplified trading metrics, cross-window aggregation | Phase 8 |
+| `backtesting/` | Historical backtest engine (`engine.py`: intrabar SL/TP simulation, notional sizing, costs, equity curve; `pipeline.py`: orchestration using `validation/`'s out-of-sample predictions) | Phase 12 |
+| `validation/` | Walk-forward validation (`walk_forward.py`): configured-vs-fallback window resolution, per-window ML + simplified trading metrics, cross-window aggregation, and `generate_oos_predictions` (Phase 12's leakage-free prediction feed) | Phase 8, extended Phase 12 |
 
 ## Data flow (target end state)
 
