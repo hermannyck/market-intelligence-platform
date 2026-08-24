@@ -26,7 +26,7 @@ tracks what's actually built.
 
 ## Status
 
-Currently on **Phase 1 — Project architecture**. See `docs/architecture.md` for the module
+Currently on **Phase 7 — Baseline ML models**. See `docs/architecture.md` for the module
 map and the full 16-phase roadmap. Each phase is built and verified before the next begins.
 
 | Phase | Status |
@@ -37,7 +37,7 @@ map and the full 16-phase roadmap. Each phase is built and verified before the n
 | 4. Five technical indicators | ✅ done |
 | 5. Feature engineering | ✅ done |
 | 6. Target generation | ✅ done |
-| 7. Baseline ML models | not started |
+| 7. Baseline ML models | ✅ done |
 | 8. Walk-forward validation | not started |
 | 9. Market regime detection | not started |
 | 10. News sentiment (FinBERT) | not started |
@@ -58,7 +58,7 @@ data/       raw/ processed/ features/ news/  (raw/ is never overwritten)
 models/     trained model artifacts (Phase 7+)
 notebooks/  exploratory analysis
 tests/      cross-cutting/integration tests
-docs/       architecture, data sources, leakage-prevention decisions
+docs/       architecture, data sources, leakage-prevention decisions, model card
 ```
 
 ## Running it (Phase 1: skeleton only)
@@ -117,7 +117,17 @@ cd backend
 .venv\Scripts\python -m app.ml.target
 ```
 
-**Database** (not required until Phase 7+)
+**Baseline ML models** (Phase 7 — Logistic Regression / Random Forest / SVM / XGBoost, one
+chronological train/test split per asset/timeframe, saved to `models/`). **Read
+`docs/model_card.md` before trusting any number this prints** — baseline accuracy is honestly
+near chance, documented on purpose, not a bug.
+
+```bash
+cd backend
+.venv\Scripts\python -m app.ml.models
+```
+
+**Database** (not required until Phase 8+)
 
 ```bash
 docker compose up -d postgres

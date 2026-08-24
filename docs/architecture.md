@@ -15,7 +15,7 @@ real-money trading, or high-frequency trading.
 | `api/` | FastAPI routers, one per nav section | Phase 1 (stubs), Phase 13 (logic) |
 | `services/` | Data ingestion (Phase 2) + cleaning (Phase 3) orchestration | Phase 2-3 |
 | `features/` | Indicators (`indicators.py`, Phase 4) + derived features (`derived.py`) + multi-timeframe alignment (`multi_timeframe.py`) + orchestration (`feature_engineering.py`), Phase 5 | Phase 4-5 |
-| `ml/` | Target generation (`target.py`, Phase 6), model training, walk-forward validation, ensemble | Phase 6-9 |
+| `ml/` | Target generation (`target.py`, Phase 6) + baseline models (`models.py`, Phase 7), walk-forward validation, ensemble | Phase 6-9 |
 | `sentiment/` | News ingestion + FinBERT scoring | Phase 10 |
 | `regime/` | Market regime detection | Phase 9 |
 | `explainability/` | SHAP global/local explanations | Phase 11 |
@@ -46,7 +46,9 @@ the user's explicit choice, not required by the spec) sits in front of all 8 pag
 
 ## Phase roadmap
 
-See `../README.md` for the full 16-phase list and current status.
+See `../README.md` for the full 16-phase list and current status. See `model_card.md` for
+honest baseline model results (Phase 7) — near-chance accuracy is the expected, documented
+outcome at this stage, not a bug.
 
 ## Lessons carried over from prior related projects
 

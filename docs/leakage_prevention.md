@@ -153,10 +153,30 @@ structurally, in anticipation of later phases:
   have no future bar yet; `target`/`future_return` stay NaN for them (not dropped here, not
   filled) — Phase 7 decides how to handle rows with no target when assembling training data.
 
+## Phase 7 (baseline ML models)
+
+- **`StandardScaler` is fit only on the training split, confirmed by construction.**
+  `build_pipelines()` puts `StandardScaler` *inside* each Pipeline (for Logistic Regression
+  and SVM); `train_baseline_models()` calls `pipeline.fit(X_train, y_train)` exactly once per
+  model, so the scaler's mean/variance are computed only from `X_train` — evaluating on
+  `X_test` later calls `.transform()` (reusing those fitted statistics), never `.fit()` again.
+  There is no code path in this module that fits anything on test data or the full dataset.
+- **No random shuffling.** `chronological_split()` takes the first `TRAIN_FRACTION` of rows in
+  time order and raises `ValueError` if the input isn't already sorted ascending — spec
+  Section 8's explicit requirement for time-series data.
+- **Categorical "UNKNOWN" is an honest placeholder, not a leak.** Converting a NaN
+  `M15_direction` (Phase 5: M15 history hasn't started that far back) to the literal string
+  "UNKNOWN" before one-hot encoding doesn't smuggle in any future information — it's telling
+  the model "this input is unavailable," which is true, rather than imputing a guessed value.
+- **Real finding, not a leak**: the best baseline model beat a naive majority-class test-set
+  baseline in only 3 of 12 (asset x timeframe) combinations. This does not indicate a leakage
+  bug (metrics were computed correctly per the above) — it's a genuine result of evaluating
+  with a single chronological split, which conflates model quality with whether the test
+  period happened to resemble the training period. See `docs/model_card.md` for the full
+  breakdown and why Phase 8's walk-forward validation exists precisely to address this.
+
 ## To be filled in by later phases
 
-- Phase 7 (models): confirmation that `StandardScaler`/other preprocessing is fit only on
-  each walk-forward window's training fold, never on test data or the full dataset.
 - Phase 9 (regime detection): confirmation regime labels at time *t* use no data after *t*.
 - Phase 10 (sentiment): confirmation no article published after the prediction timestamp is
   used.
