@@ -26,7 +26,7 @@ tracks what's actually built.
 
 ## Status
 
-Currently on **Phase 10 — News sentiment (FinBERT)**. See `docs/architecture.md` for the module
+Currently on **Phase 11 — SHAP explainability**. See `docs/architecture.md` for the module
 map and the full 16-phase roadmap. Each phase is built and verified before the next begins.
 
 | Phase | Status |
@@ -41,7 +41,7 @@ map and the full 16-phase roadmap. Each phase is built and verified before the n
 | 8. Walk-forward validation | ✅ done |
 | 9. Market regime detection | ✅ done |
 | 10. News sentiment (FinBERT) | ✅ done |
-| 11. SHAP explainability | not started |
+| 11. SHAP explainability | ✅ done |
 | 12. Backtesting | not started |
 | 13. Backend API (real endpoints) | not started |
 | 14. React dashboard (real data) | not started |
@@ -157,7 +157,17 @@ cd backend
 .venv\Scripts\python -m app.sentiment.pipeline
 ```
 
-**Database** (not required until Phase 11+)
+**SHAP explainability** (Phase 11 — global feature importance + local per-prediction
+explanations for all 4 models, saved to `models/`). SVM explanations are capped to a small
+sample size (see `docs/leakage_prevention.md`'s Phase 11 entry) since `KernelExplainer` is
+~1000x slower than the TreeExplainer/LinearExplainer used for the other 3 models.
+
+```bash
+cd backend
+.venv\Scripts\python -m app.explainability.pipeline
+```
+
+**Database** (not required until Phase 12+)
 
 ```bash
 docker compose up -d postgres

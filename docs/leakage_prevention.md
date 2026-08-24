@@ -282,3 +282,29 @@ structurally, in anticipation of later phases:
   held up well overall (mean +0.61 for positive-templated headlines, -0.70 for negative), but
   this single case is a real, worth-remembering limitation of headline-level financial
   sentiment scoring, not a bug in this project's pipeline.
+
+## Phase 11 (SHAP explainability)
+
+- **Not a leakage-sensitive phase, and here's why explicitly.** SHAP explains an *already
+  trained* model's behavior after the fact — it fits nothing, and the "background" data used
+  to compute expected values is just a reference distribution, not a training set. There is no
+  train/test boundary to respect the way Phase 7/8's chronological splits do; using any
+  representative sample (including rows that happen to be from the test period, or even a
+  random shuffle) as SHAP background is legitimate and standard practice, unlike using it to
+  *fit* a model or *tune* a threshold.
+- **Explainer output shape verified empirically against the actual installed shap version
+  (0.52.0), not assumed from memory or docs.** `shap.TreeExplainer`, `shap.LinearExplainer`,
+  and `shap.KernelExplainer` all returned a consistent `(n_samples, n_features, n_classes)`
+  array in direct testing against real trained Phase 7 models before any explainer code was
+  written — this cross-version API inconsistency is a well-known SHAP pain point, so it was
+  checked rather than guessed.
+- **One-hot aggregation is exact, not approximate**: SHAP values are additive by construction,
+  so summing the one-hot dummy columns belonging to one original categorical feature (e.g. all
+  `categorical__H1_direction_*` columns) back into a single `H1_direction` contribution
+  recovers exactly what that feature's total contribution would have been, not an estimate.
+- **SVM's cost is bounded deliberately and documented, not hidden.** `shap.KernelExplainer`
+  (needed since the trained SVM uses an RBF kernel with no linear/tree structure) measured at
+  ~3s/explained row even with an aggressively small k-means-summarized background (20 points).
+  `app.config.EXPLAIN` caps both the background size and how many rows get explained per SVM
+  run — every row that IS explained still gets a real, un-approximated SHAP computation; the
+  cap only limits *how many* rows, never the quality of any individual explanation.

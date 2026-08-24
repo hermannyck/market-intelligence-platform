@@ -108,3 +108,37 @@ volatile than the headline return suggests. This is exactly the gap between "ML 
 and "trading performance" the spec asks to be kept explicitly distinct — the realistic version,
 with costs, sizing, and drawdown-aware risk management, is Phase 12's dedicated backtest
 engine, not this diagnostic.
+
+## Phase 11 update — SHAP explainability (a look inside the XAU/USD D1 SVM standout)
+
+Ran `backend/app/explainability/pipeline.py` on all 48 (asset × timeframe × model)
+combinations. Full reports: `models/{asset}_{timeframe}_{model}_explainability_*.json`.
+
+**A real, concrete local explanation** (spec Section 12's exact example format) for XAU/USD
+D1's SVM — the Phase 8 standout — at its most recent row (2026-08-06):
+
+```
+Prediction: HOLD
+Probability: SELL 27.8%  HOLD 38.0%  BUY 34.2%
+Top factors:
+BB_middle    +0.0472
+EMA50        +0.0383
+EMA200       +0.0255
+BB_upper     +0.0251
+EMA20        +0.0248
+```
+
+Notice the probabilities are fairly close together (28/38/34%) — this particular prediction
+isn't a confident call, which is honest and consistent with the model's ~51% overall accuracy
+on this combination (Phase 8): a real edge over chance, not a reliably confident one.
+
+**Cross-combination pattern**: `EMA200` (and the closely-related `EMA50`, `EMA20`) and
+Bollinger Band levels (`BB_upper`/`BB_middle`/`BB_lower`) dominate the top-5 global feature
+importance list across nearly all 48 combinations, for every model type. This makes intuitive
+sense — `EMA200` tracks a long trailing price level, so it (and where price sits relative to
+the Bollinger Bands) is highly informative about "where is price relative to its own recent
+history," a natural strong signal regardless of model family. Multi-timeframe direction
+columns and news sentiment rarely crack the top 5 (an exception: SVM models on H1/H4 lean more
+on `D1_direction`/`H4_direction` than the other models do) — consistent with Phase 5's finding
+that multi-timeframe coverage itself is sparse for older history, and Phase 10's finding that
+sentiment coverage is sparse everywhere except recent M15 history.

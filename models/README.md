@@ -15,3 +15,9 @@ hand-edited.
   simplified per-window trading diagnostic, plus an `"overall"` mean/std aggregation across
   windows per model. This supersedes the Phase 7 single-split comparison as the primary
   evaluation — the single split still exists as the very first, most naive baseline.
+- `{asset}_{timeframe}_{model}_explainability_{stamp}.json` — Phase 11's SHAP output: global
+  feature importance (mean |SHAP value| across a sampled set of rows) and a local explanation
+  for the most recent row (predicted class, per-class probabilities, top contributing
+  features with signed SHAP values) — see `docs/leakage_prevention.md`'s Phase 11 entry for
+  the explainer choice per model (TreeExplainer for RF/XGBoost, LinearExplainer for LR,
+  KernelExplainer for SVM) and why SVM's explanations are capped to a small sample size.

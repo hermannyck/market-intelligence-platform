@@ -250,6 +250,25 @@ MODELS: tuple[ModelName, ...] = (
 
 
 # ---------------------------------------------------------------------------
+# 7b. SHAP explainability (Section 12). Tree models get shap.TreeExplainer (the
+#     spec's own recommendation); SVM's non-linear kernel needs the much more
+#     expensive shap.KernelExplainer, so its sample sizes are capped separately
+#     and deliberately small -- see app/explainability/shap_explainer.py.
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class ExplainabilityConfig:
+    global_explanation_sample_size: int = 100  # rows sampled for global importance (tree/linear models)
+    kernel_explainer_background_size: int = 20  # k-means-summarized background for SVM's KernelExplainer
+    kernel_explainer_sample_size: int = 20       # max rows explained via KernelExplainer per run (SVM only)
+    kernel_explainer_nsamples: int = 100         # coalition samples per explained row (SVM only)
+    top_n_local_factors: int = 5                 # features shown in a local explanation
+
+
+EXPLAIN = ExplainabilityConfig()
+
+
+# ---------------------------------------------------------------------------
 # 8. Environment-derived settings (DB connection, JWT secret, etc.)
 # ---------------------------------------------------------------------------
 

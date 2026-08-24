@@ -49,3 +49,6 @@ joblib==1.5.3
 # install torch separately first, then the rest of this file).
 torch==2.13.0
 transformers==5.15.1
+
+# Phase 11: SHAP explainability
+shap==0.52.0
