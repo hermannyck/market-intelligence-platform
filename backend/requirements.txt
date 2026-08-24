@@ -1,5 +1,5 @@
 # Phase 1: minimal set to run the API skeleton + tests.
-# Later phases append their own needs here (pandas/numpy/scikit-learn/xgboost in Phase 7,
+# Later phases append their own needs here (scikit-learn/xgboost in Phase 7,
 # pandas-ta in Phase 4, shap in Phase 11, transformers+torch for FinBERT in Phase 10, etc.)
 # rather than front-loading heavy ML/NLP dependencies before there's code that uses them.
 fastapi==0.115.6
@@ -12,3 +12,8 @@ pyjwt==2.10.1
 passlib[bcrypt]==1.7.4
 pytest==8.3.4
 httpx==0.28.1
+
+# Phase 2: historical data ingestion
+pandas==2.2.3
+numpy==2.1.3
+yfinance==1.6.0

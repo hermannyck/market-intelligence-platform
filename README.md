@@ -32,7 +32,7 @@ map and the full 16-phase roadmap. Each phase is built and verified before the n
 | Phase | Status |
 |---|---|
 | 1. Project architecture | ✅ done |
-| 2. Historical data ingestion | not started |
+| 2. Historical data ingestion | ✅ done |
 | 3. Data cleaning and EDA | not started |
 | 4. Five technical indicators | not started |
 | 5. Feature engineering | not started |
@@ -80,6 +80,14 @@ cd frontend
 npm install
 npm run build   # type-checks + production build
 npm run dev      # serves http://127.0.0.1:5173 — login screen -> 8 nav page stubs
+```
+
+**Data ingestion** (Phase 2 — pulls EUR/USD, BTC/USD, XAU/USD across M15/H1/D1 into
+`data/raw/`; H4 is derived later by resampling H1, see `docs/data_sources.md`)
+
+```bash
+cd backend
+.venv\Scripts\python -m app.services.ingestion
 ```
 
 **Database** (not required until Phase 6+)

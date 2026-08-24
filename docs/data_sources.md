@@ -18,9 +18,18 @@ yfinance realistically provides:
 - **60-minute (H1, and H4 by resampling):** ~730 days of history
 - **Daily (D1):** effectively unlimited (years)
 
-This is well short of the multi-year windows the walk-forward validation spec describes
-(e.g. train 2021-2023, test 2024). Decision, made explicitly with the user rather than
-silently worked around:
+Actual depth observed from the Phase 2 ingestion run (2026-08-24, see manifests in
+`data/raw/*.manifest.json` for exact figures):
+
+| Asset | M15 | H1 | D1 |
+|---|---|---|---|
+| EUR/USD | ~60 days (5,652 bars) | ~2 years (17,259 bars) | **2003-2026** (5,897 bars) |
+| BTC/USD | ~60 days (5,632 bars) | ~2 years (17,320 bars) | **2014-2026** (4,360 bars) |
+| XAU/USD (GC=F) | ~71 days (4,528 bars) | ~2 years (13,757 bars) | **2000-2026** (6,519 bars) |
+
+D1 history turned out to go back over two decades for EUR/USD and XAU/USD, and over a decade
+for BTC/USD — comfortably enough for multi-year walk-forward windows (e.g. train 2021-2023,
+test 2024). Decision, made explicitly with the user rather than silently worked around:
 
 - **D1 is the multi-year backbone.** Full walk-forward validation and backtesting across
   multi-year windows (2021-2025 style) are demonstrated primarily on D1.
@@ -35,6 +44,30 @@ If deeper intraday history becomes a requirement later, the ingestion layer in
 `backend/app/services/` is the single place a new provider would plug in — nothing else in
 the pipeline should need to change, since everything downstream consumes `data/processed/`
 in a source-agnostic OHLCV schema.
+
+## Phase 2: ingestion implementation notes
+
+- `backend/app/services/ingestion.py` fetches M15, H1, and D1 directly from yfinance.
+  **H4 is not fetched** — yfinance has no native 4-hour interval, so H4 is derived by
+  resampling H1 in Phase 3 (cleaning/processing), not invented at ingestion time.
+- Every fetch is written to a new, uniquely UTC-timestamped file —
+  `data/raw/{ASSET}_{TIMEFRAME}_{YYYYMMDDTHHMMSSZ}.csv` — with a sibling
+  `.manifest.json` recording the ticker, requested interval/period, proxy status, actual
+  row count/date range, and fetch time. Nothing in `data/raw/` is ever overwritten; a
+  same-second re-run refuses rather than clobbering (`FileExistsError`).
+  Raw index timestamps are kept exactly as yfinance returns them (tz-aware, in each
+  ticker's native exchange timezone — UTC for EUR/USD & BTC/USD, US Eastern for XAU/USD's
+  `GC=F`) rather than normalized here; normalizing to a single timezone for cross-asset
+  comparison happens in Phase 3, and is recorded in `docs/leakage_prevention.md`.
+- **Dependency note:** `yfinance==0.2.50` (the version originally pinned) failed with an
+  empty-response error against Yahoo's current API even though direct HTTPS calls to the
+  same endpoint worked fine — a crumb/cookie-handling issue fixed in the library since.
+  Pinned to `yfinance==1.6.0` instead, which works. If ingestion starts failing with an
+  empty-DataFrame error again, check for a newer yfinance release before assuming the data
+  source itself is unavailable.
+- Run it: `cd backend && .venv/Scripts/python -m app.services.ingestion` (prints a summary
+  table + full per-fetch JSON). Unit tests (`backend/tests/test_ingestion.py`) mock
+  yfinance entirely, so the test suite doesn't depend on network access or Yahoo's uptime.
 
 ## News data (Phase 10)
 
