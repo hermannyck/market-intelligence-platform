@@ -45,6 +45,30 @@ If deeper intraday history becomes a requirement later, the ingestion layer in
 the pipeline should need to change, since everything downstream consumes `data/processed/`
 in a source-agnostic OHLCV schema.
 
+## Phase 3 finding: yfinance daily OHLC inconsistency (EUR/USD, XAU/USD)
+
+`app/services/cleaning.py::validate_and_clean` drops any bar where `close` falls outside
+`[low, high]` (or `open` does). Running it on the real Phase 2 pulls surfaced a genuine data
+quality issue in yfinance's **daily** bars, not a bug in the validation:
+
+| Asset | Timeframe | Invalid-OHLC rows dropped | Rate |
+|---|---|---|---|
+| EUR/USD | D1 | 128 / 5,897 | 2.17% |
+| XAU/USD (GC=F) | D1 | 441 / 6,519 | 6.76% |
+| EUR/USD | H1 | 0 / 17,259 | 0% |
+| XAU/USD (GC=F) | H1 | 0 / 13,757 | 0% |
+| BTC/USD | D1, H1 | 0 | 0% |
+
+Only **daily** EUR/USD and XAU/USD bars are affected — hourly data for the same tickers, and
+all BTC/USD data, is clean. The pattern (spot-checked): `close` sits a few pips outside the
+`[low, high]` range, consistent with Yahoo's daily FX/futures `Close` occasionally being
+sourced from a slightly different snapshot than the day's `High`/`Low`. This is a known
+characteristic of free daily forex/futures data on Yahoo Finance, not specific to this
+ticker. **Decision:** drop these rows rather than "fix" them (e.g. clamping close to the
+high/low range) — silently altering a price would be worse than losing the bar, and the drop
+rate is small enough (≤7%) not to threaten the D1 backbone's multi-year coverage. See the
+Phase 3 EDA notebook (`notebooks/phase3_data_cleaning_eda.ipynb`) for the full breakdown.
+
 ## Phase 2: ingestion implementation notes
 
 - `backend/app/services/ingestion.py` fetches M15, H1, and D1 directly from yfinance.

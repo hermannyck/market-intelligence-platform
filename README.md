@@ -33,7 +33,7 @@ map and the full 16-phase roadmap. Each phase is built and verified before the n
 |---|---|
 | 1. Project architecture | ✅ done |
 | 2. Historical data ingestion | ✅ done |
-| 3. Data cleaning and EDA | not started |
+| 3. Data cleaning and EDA | ✅ done |
 | 4. Five technical indicators | not started |
 | 5. Feature engineering | not started |
 | 6. Target generation | not started |
@@ -88,6 +88,15 @@ npm run dev      # serves http://127.0.0.1:5173 — login screen -> 8 nav page s
 ```bash
 cd backend
 .venv\Scripts\python -m app.services.ingestion
+```
+
+**Data cleaning** (Phase 3 — raw -> `data/processed/`: UTC normalization, dedup/NaN/invalid-
+OHLC removal, gap reporting, H4 derived from H1). See
+`notebooks/phase3_data_cleaning_eda.ipynb` for the EDA writeup.
+
+```bash
+cd backend
+.venv\Scripts\python -m app.services.cleaning
 ```
 
 **Database** (not required until Phase 6+)
