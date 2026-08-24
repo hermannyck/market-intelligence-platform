@@ -13,8 +13,8 @@ real-money trading, or high-frequency trading.
 | `config.py` | Single source of truth for assets, timeframes, indicator params, target rules, walk-forward windows, backtest assumptions | Phase 1 |
 | `database/` | SQLAlchemy engine/session, ORM base | Phase 1 (plumbing), Phase 6+ (tables) |
 | `api/` | FastAPI routers, one per nav section | Phase 1 (stubs), Phase 13 (logic) |
-| `services/` | Data ingestion orchestration | Phase 2 |
-| `features/` | Indicators + feature engineering | Phase 4-5 |
+| `services/` | Data ingestion (Phase 2) + cleaning (Phase 3) orchestration | Phase 2-3 |
+| `features/` | Indicators (Phase 4) + feature engineering (Phase 5) | Phase 4-5 |
 | `ml/` | Target generation, model training, walk-forward validation, ensemble | Phase 6-9 |
 | `sentiment/` | News ingestion + FinBERT scoring | Phase 10 |
 | `regime/` | Market regime detection | Phase 9 |

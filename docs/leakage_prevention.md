@@ -65,10 +65,31 @@ structurally, in anticipation of later phases:
   pull it came from — so any processed dataset's lineage back to the original API response is
   traceable.
 
+## Phase 4 (technical indicators)
+
+- **Verified, not assumed, no-lookahead.** `app/features/indicators.py` computes EMA/RSI/MACD/
+  ATR/Bollinger Bands via `pandas-ta`, which implements all five as standard trailing/causal
+  formulas (exponential smoothing, Wilder's smoothing, a rolling mean/std) — none use centered
+  windows. Rather than relying on that being true, `test_no_lookahead_indicators_match_when_computed_on_truncated_series`
+  recomputes indicators on a truncated series and asserts every value up to the truncation
+  point is bit-identical to the value computed with the full series available — i.e. a row's
+  indicator value provably cannot have been influenced by rows after it.
+- **Row order, not the time index, drives the calculation.** `add_all_indicators` requires the
+  input sorted ascending by timestamp and raises otherwise — pandas-ta's rolling/EWM
+  calculations operate on row position, so an unsorted input would silently compute nonsense
+  (or worse, something that happens to look plausible) rather than fail loudly.
+  Real processed data has gaps (weekends, etc. — Phase 3) but no non-monotonic ordering, so
+  this doesn't require the time index itself to be evenly spaced, only correctly ordered.
+- **Warmup NaNs are left as NaN, not filled or backfilled.** A row before an indicator's
+  warmup period has elapsed (e.g. no EMA200 until the 200th bar) has no valid value — and
+  filling it with anything (even a "reasonable" guess) would be fabricating information that
+  didn't exist at that point in history. On the real Phase 2/3 data this drops roughly 3-4%
+  of rows to warmup (e.g. EUR/USD D1: 5,769 -> 5,570 rows with all five indicators valid);
+  Phase 5/6 decide whether/how to handle the remaining warmup NaNs when assembling the final
+  training set.
+
 ## To be filled in by later phases
 
-- Phase 4-5 (indicators/features): confirmation that every indicator/feature at row *t* uses
-  only bars ≤ *t*.
 - Multi-timeframe alignment (Phase 5): how a lower-timeframe row looks up its parent
   higher-timeframe value without peeking at a not-yet-closed higher-timeframe bar.
 - Phase 6 (target generation): the exact leakage boundary between feature columns and the

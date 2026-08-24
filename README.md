@@ -34,7 +34,7 @@ map and the full 16-phase roadmap. Each phase is built and verified before the n
 | 1. Project architecture | ✅ done |
 | 2. Historical data ingestion | ✅ done |
 | 3. Data cleaning and EDA | ✅ done |
-| 4. Five technical indicators | not started |
+| 4. Five technical indicators | ✅ done |
 | 5. Feature engineering | not started |
 | 6. Target generation | not started |
 | 7. Baseline ML models | not started |

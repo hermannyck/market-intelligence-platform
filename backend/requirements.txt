@@ -24,3 +24,6 @@ matplotlib==3.9.3
 jupyter==1.1.1
 ipykernel==6.29.5
 nbconvert==7.16.4
+
+# Phase 4: technical indicators
+pandas-ta==0.4.71b0
