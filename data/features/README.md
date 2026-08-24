@@ -27,9 +27,15 @@ Every column is computed using only information available at that row's timestam
   distribution across all 12 combos: Sideways dominates (43-57%), Trending is rare (1-8%
   combined) — see `notebooks/phase9_regime_detection_eda.ipynb`.
 
-**Not yet included**: news sentiment (Phase 10). Will extend this schema via a timestamp+asset
-join once that module exists, rather than this phase guessing at its shape ahead of time.
+- News sentiment (Phase 10, `backend/app/sentiment/pipeline.py`): `sentiment_score`,
+  `positive_probability`, `negative_probability`, `neutral_probability`, `num_relevant_news`,
+  `rolling_sentiment_score` — from the real `ProsusAI/finbert` model scoring a documented
+  *synthetic sample* news dataset (not a real historical archive; see `data/news/README.md`),
+  joined timestamp-aware (never a future article). Coverage is honestly sparse outside recent
+  history (0.6-1.3% on D1, 31-35% on M15) — see `docs/data_sources.md` for the full table and
+  why. This is currently the last stage in the pipeline, so "latest file" now means
+  indicators + derived + MTF bias + target + regime + sentiment, all in one dataset.
 
-Every manifest's `source_processed_manifests` (or, for labeled files, `source_features_manifest`)
+Every manifest's `source_processed_manifests` (or, for downstream files, `source_features_manifest`)
 traces back to the exact upstream file(s) used to build it — full provenance chain back to the
 original raw pull.

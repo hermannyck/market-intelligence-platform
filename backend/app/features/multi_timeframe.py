@@ -94,7 +94,12 @@ def attach_multi_timeframe_bias(
         direction_cols.append(col)
 
     def _majority_vote(row: pd.Series) -> object:
-        votes = [v for v in row if v in (DIRECTION_BULLISH, DIRECTION_BEARISH)]
+        # pd.notna(v) must short-circuit before `v in (...)`: comparing pd.NA to a string
+        # returns pd.NA (not False), and evaluating *that* in a boolean context is itself a
+        # TypeError ("boolean value of NA is ambiguous") -- pandas >=2.3 raises this where
+        # earlier versions were more lenient here, surfaced when this project's pandas pin
+        # was updated for Phase 10's torch/pyarrow compatibility fix (see requirements.txt).
+        votes = [v for v in row if pd.notna(v) and v in (DIRECTION_BULLISH, DIRECTION_BEARISH)]
         if not votes:
             return pd.NA
         bulls, bears = votes.count(DIRECTION_BULLISH), votes.count(DIRECTION_BEARISH)

@@ -7,3 +7,6 @@ requires-python = ">=3.11"
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
+markers = [
+    "slow: loads the real FinBERT model and runs inference (Phase 10) -- skip with -m 'not slow' for a fast run.",
+]

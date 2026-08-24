@@ -95,6 +95,40 @@ Phase 3 EDA notebook (`notebooks/phase3_data_cleaning_eda.ipynb`) for the full b
 
 ## News data (Phase 10)
 
-Historical financial news + FinBERT sentiment. If no live historical news feed is wired up
-in the initial implementation, `data/news/` holds a clearly documented sample/historical
-dataset instead of pretending future news is available. See `data/news/README.md`.
+**No live or licensed historical news feed is wired up.** `data/news/sample_headlines.csv` is
+a synthetic, template-generated sample instead (180 headlines, `backend/scripts/
+generate_sample_news.py`, fixed seed) — real-world-plausible categories and tone variety, but
+not real reported events. See `data/news/README.md` for the full rationale and generation
+method.
+
+Scored with the real `ProsusAI/finbert` pretrained model (`backend/app/sentiment/finbert.py`)
+— genuine model inference, not fabricated scores. Sanity-checked against the sample's own
+intended tone: positive-templated headlines average `sentiment_score` +0.61, negative average
+-0.70 (see `docs/leakage_prevention.md`'s Phase 10 entry for a real case where FinBERT's tone
+score and a headline's intended market implication diverged).
+
+**Sentiment feature coverage tracks the same data-depth pattern established since Phase 2**,
+because the sample's dates are weighted toward the last ~90 days/~2 years while D1 spans
+decades:
+
+| Asset | M15 | H1 | H4 | D1 |
+|---|---|---|---|---|
+| EUR/USD | 31.1% | 4.99% | 4.95% | 0.64% |
+| BTC/USD | 34.6% | 6.56% | 6.57% | 1.26% |
+| XAU/USD | 33.3% | 5.68% | 5.64% | 0.59% |
+
+(% of rows with a non-null `sentiment_score` in the 24h short window, from the real Phase 10
+pipeline run.) This is expected and documented, not a bug — most of D1's multi-decade history
+predates the sample news entirely.
+
+**Dependency notes** (see `backend/requirements.txt` for the full story): installing
+`transformers`/`torch` surfaced two real environment issues, both fixed:
+1. `pandas-ta` actually requires `pandas>=2.3.2`, which the original `pandas==2.2.3` /
+   `numpy==2.1.3` pins violated once pip's resolver was forced to reconcile everything —
+   it silently upgraded pandas all the way to 3.0.5.
+2. `pyarrow==18.1.0` has a genuine Windows DLL conflict with torch (`WinError 1114` loading
+   `torch/lib/c10.dll`), reproducible with nothing more than `import pyarrow; import torch` —
+   unrelated to pandas or pytest. Fixed by upgrading to `pyarrow==25.0.1`.
+
+`torch` is CPU-only and not on the default PyPI index — install it separately:
+`pip install torch --index-url https://download.pytorch.org/whl/cpu`.

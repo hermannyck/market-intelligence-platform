@@ -16,7 +16,7 @@ real-money trading, or high-frequency trading.
 | `services/` | Data ingestion (Phase 2) + cleaning (Phase 3) orchestration | Phase 2-3 |
 | `features/` | Indicators (`indicators.py`, Phase 4) + derived features (`derived.py`) + multi-timeframe alignment (`multi_timeframe.py`) + orchestration (`feature_engineering.py`), Phase 5 | Phase 4-5 |
 | `ml/` | Target generation (`target.py`, Phase 6) + baseline models (`models.py`, Phase 7) + ensemble | Phase 6-9 |
-| `sentiment/` | News ingestion + FinBERT scoring | Phase 10 |
+| `sentiment/` | News data interface (`news_data.py`) + FinBERT scoring (`finbert.py`) + timestamp-aware windowed aggregation/orchestration (`pipeline.py`) | Phase 10 |
 | `regime/` | Market regime detection (`detector.py`: rule-based classifier + exploratory KMeans comparison, `pipeline.py`: orchestration) | Phase 9 |
 | `explainability/` | SHAP global/local explanations | Phase 11 |
 | `backtesting/` | Historical backtest engine | Phase 12 |

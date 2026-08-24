@@ -240,7 +240,45 @@ structurally, in anticipation of later phases:
   (43-57%). See the Phase 9 notebook for the full breakdown and a discussion of whether
   `REGIME.trend_strength_threshold` should be revisited.
 
-## To be filled in by later phases
+## Phase 10 (news sentiment)
 
-- Phase 10 (sentiment): confirmation no article published after the prediction timestamp is
-  used.
+- **Confirmed, not assumed, that no future article is ever used.** `_windowed_aggregate`
+  computes, for each bar's own close time, the mean/count of articles published in
+  ``(close_time - window, close_time]`` via `searchsorted` — an article at `close_time + 1s`
+  is provably excluded by construction (it sorts after `close_time`, so it falls outside the
+  index range `searchsorted` returns). Verified directly by
+  `test_attach_sentiment_features_no_lookahead`, and the boundary case (an article published
+  at *exactly* the bar's close time, which should count) by
+  `test_attach_sentiment_features_exact_close_time_is_visible`.
+- **A real windowed-aggregation bug caught before it shipped**: the first implementation
+  precomputed each article's own trailing-window aggregate (at *that article's* timestamp)
+  and then as-of-joined those values onto bars — which is subtly wrong. A bar far enough past
+  an article that the window should have "rolled off" by the *bar's* time would still show
+  that article as "in range," because the precomputed value was frozen at the article's own
+  (much earlier) timestamp. Caught by
+  `test_num_relevant_news_is_zero_not_nan_before_any_coverage_gap`; fixed by computing the
+  window relative to each bar's own close time directly (`_windowed_aggregate`'s docstring has
+  the full explanation). The same category of bug as Phase 5's close-time hazard, just with
+  the added twist of the aggregate itself needing to move with the query point, not just the
+  lookup.
+- **The sample news dataset is synthetic, documented as such everywhere it's used** — not a
+  real historical news archive (a licensed vendor would be required for that; this project
+  doesn't have one). See `data/news/README.md` and `docs/data_sources.md` for the full
+  rationale; every processed manifest's `sentiment_source` field repeats this so it's never
+  silently forgotten downstream.
+- **`num_relevant_news` is 0 (a real count) when there's genuinely no news in the window;
+  `sentiment_score`/probabilities are NaN when there's nothing to average** — the same
+  "count vs. value" NaN distinction as Phase 6/9, not blurred here either.
+- **Real finding**: sentiment coverage is honestly sparse and follows the data-depth pattern
+  established since Phase 2 — M15 (whose ~60-90 day history overlaps heavily with where the
+  sample news is concentrated) gets 31-35% coverage in the 24h short window; D1 (decades of
+  history vs. ~3 years of sample news) gets under 1.3%. Documented in `docs/data_sources.md`
+  rather than left to look like a bug.
+- **Real finding: FinBERT scores linguistic tone, not "good/bad for this asset's price," and
+  those can diverge.** One sample headline templated as "negative" — "Gold tumbles on improved
+  risk appetite reducing haven demand" — scored `sentiment_score = +0.70` (strongly positive)
+  because "improved risk appetite" is genuinely positive economic language, even though the
+  same sentence is bearish for gold specifically. Aggregate tone/sentiment_score correlation
+  held up well overall (mean +0.61 for positive-templated headlines, -0.70 for negative), but
+  this single case is a real, worth-remembering limitation of headline-level financial
+  sentiment scoring, not a bug in this project's pipeline.

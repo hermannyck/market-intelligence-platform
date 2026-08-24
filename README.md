@@ -26,7 +26,7 @@ tracks what's actually built.
 
 ## Status
 
-Currently on **Phase 9 — Market regime detection**. See `docs/architecture.md` for the module
+Currently on **Phase 10 — News sentiment (FinBERT)**. See `docs/architecture.md` for the module
 map and the full 16-phase roadmap. Each phase is built and verified before the next begins.
 
 | Phase | Status |
@@ -40,7 +40,7 @@ map and the full 16-phase roadmap. Each phase is built and verified before the n
 | 7. Baseline ML models | ✅ done |
 | 8. Walk-forward validation | ✅ done |
 | 9. Market regime detection | ✅ done |
-| 10. News sentiment (FinBERT) | not started |
+| 10. News sentiment (FinBERT) | ✅ done |
 | 11. SHAP explainability | not started |
 | 12. Backtesting | not started |
 | 13. Backend API (real endpoints) | not started |
@@ -147,7 +147,17 @@ cd backend
 .venv\Scripts\python -m app.regime.pipeline
 ```
 
-**Database** (not required until Phase 10+)
+**News sentiment** (Phase 10 — FinBERT on a documented synthetic sample news dataset, joined
+timestamp-aware onto `data/features/`). **Read `data/news/README.md` first** — the news
+dataset is not real historical news. `torch` must be installed separately first (see
+`backend/requirements.txt`).
+
+```bash
+cd backend
+.venv\Scripts\python -m app.sentiment.pipeline
+```
+
+**Database** (not required until Phase 11+)
 
 ```bash
 docker compose up -d postgres

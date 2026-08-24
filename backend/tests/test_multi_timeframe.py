@@ -61,7 +61,13 @@ def test_as_of_join_identity_for_own_timeframe():
     close_time = pd.Series(index + pd.Timedelta(hours=1), index=index)
     result = mtf.as_of_join(close_time, direction, Timeframe.H1)
     for a, b in zip(result, direction):
-        assert a == b or (pd.isna(a) and pd.isna(b))
+        # `a == b` on two pd.NA values returns pd.NA, not True/False, and evaluating that in
+        # a boolean `or` raises ("boolean value of NA is ambiguous") -- check isna() first
+        # instead of relying on short-circuit truthiness of a possibly-NA comparison result.
+        if pd.isna(a) or pd.isna(b):
+            assert pd.isna(a) and pd.isna(b)
+        else:
+            assert a == b
 
 
 def test_as_of_join_returns_nan_before_source_history_starts():

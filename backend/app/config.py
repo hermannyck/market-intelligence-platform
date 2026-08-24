@@ -213,6 +213,23 @@ REGIME = RegimeConfig()
 
 
 # ---------------------------------------------------------------------------
+# 6c. News sentiment (Section 7) — FinBERT, timestamp-aware. data/news/ holds a
+#     documented SAMPLE dataset (not a real historical archive -- see
+#     data/news/README.md) per the spec's own explicit contingency for when a live
+#     historical news feed isn't available.
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class SentimentConfig:
+    finbert_model_name: str = "ProsusAI/finbert"
+    short_window: str = "24h"  # window for "current" sentiment_score / probabilities / article count
+    long_window: str = "7D"    # window for the smoothed "rolling_sentiment_score"
+
+
+SENTIMENT = SentimentConfig()
+
+
+# ---------------------------------------------------------------------------
 # 7. Models (Section 8) — exactly these four, per the spec.
 # ---------------------------------------------------------------------------
 
