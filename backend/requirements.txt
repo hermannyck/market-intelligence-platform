@@ -9,7 +9,12 @@ sqlalchemy==2.0.36
 psycopg2-binary==2.9.10
 python-dotenv==1.0.1
 pyjwt==2.10.1
-passlib[bcrypt]==1.7.4
+# bcrypt called directly (Phase 13), not via passlib -- passlib's CryptContext probes
+# bcrypt.__about__.__version__, which bcrypt>=4.1 removed, breaking hashing entirely. See
+# app/auth/security.py's module docstring; the same fix forex-ai-dashboard (docs/architecture.md's
+# "lessons carried over") needed for the identical reason.
+bcrypt==5.0.0
+email-validator==2.2.0
 pytest==8.3.4
 httpx==0.28.1
 

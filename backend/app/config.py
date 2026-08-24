@@ -63,6 +63,11 @@ ASSETS: dict[str, AssetConfig] = {
     ),
 }
 
+# Phase 13: an Enum mirroring ASSETS' keys, so FastAPI path parameters get the same automatic
+# validation + OpenAPI enum listing as Timeframe/ModelName already have -- adding a new asset
+# to ASSETS above and here is the only change needed for it to show up as a valid API value.
+AssetKey = Enum("AssetKey", {k: k for k in ASSETS})
+
 
 # ---------------------------------------------------------------------------
 # 2. Timeframes

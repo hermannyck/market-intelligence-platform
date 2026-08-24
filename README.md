@@ -26,7 +26,7 @@ tracks what's actually built.
 
 ## Status
 
-Currently on **Phase 12 — Backtesting**. See `docs/architecture.md` for the module
+Currently on **Phase 13 — Backend API**. See `docs/architecture.md` for the module
 map and the full 16-phase roadmap. Each phase is built and verified before the next begins.
 
 | Phase | Status |
@@ -43,7 +43,7 @@ map and the full 16-phase roadmap. Each phase is built and verified before the n
 | 10. News sentiment (FinBERT) | ✅ done |
 | 11. SHAP explainability | ✅ done |
 | 12. Backtesting | ✅ done |
-| 13. Backend API (real endpoints) | not started |
+| 13. Backend API (real endpoints) | ✅ done |
 | 14. React dashboard (real data) | not started |
 | 15. Historical replay mode | not started |
 | 16. Testing and documentation | not started |
@@ -61,16 +61,18 @@ tests/      cross-cutting/integration tests
 docs/       architecture, data sources, leakage-prevention decisions, model card
 ```
 
-## Running it (Phase 1: skeleton only)
+## Running it
 
 **Backend**
 
 ```bash
 cd backend
 python -m venv .venv
+.venv\Scripts\pip install torch --index-url https://download.pytorch.org/whl/cpu  # first, separately (Phase 10)
 .venv\Scripts\pip install -r requirements.txt   # Windows
-pytest                                           # 2 passing smoke tests
-uvicorn app.main:app --reload                    # serves http://127.0.0.1:8000/health
+set DATABASE_URL=sqlite:///./dev.db             # local dev fallback -- see Database section below
+pytest                                           # 150+ tests (a few are @pytest.mark.slow -- real FinBERT/SHAP inference)
+uvicorn app.main:app --reload                    # serves http://127.0.0.1:8000 -- see /docs for the full API
 ```
 
 **Frontend**
@@ -177,11 +179,30 @@ cd backend
 .venv\Scripts\python -m app.backtesting.pipeline
 ```
 
-**Database** (not required until Phase 13+)
+**Backend API** (Phase 13 — real endpoints for all 8 nav sections, reading straight from the
+files the phases above produced, plus a real JWT login gate). See `docs/architecture.md`'s
+Backend API section for the full endpoint list, and `docs/leakage_prevention.md`'s Phase 13
+entry for why `/api/predictions` necessarily serves Phase 7's baseline model rather than a
+walk-forward-validated one.
+
+```bash
+cd backend
+.venv\Scripts\uvicorn app.main:app --reload
+# then open http://127.0.0.1:8000/docs for interactive API docs
+```
+
+**Database** — the spec's stated choice is PostgreSQL (`app.config.SETTINGS.database_url`
+defaults to it), needed only for the `users` table (the login gate). Only used starting Phase
+13 (auth) — every other endpoint works with no database at all.
 
 ```bash
 docker compose up -d postgres
 ```
+
+If Docker/PostgreSQL aren't available (this project was developed without either installed),
+use SQLite for local dev instead — set `DATABASE_URL=sqlite:///./dev.db` before running the
+server or tests. `app/database/models.py::User` uses plain, DB-agnostic column types so it
+works identically either way.
 
 ## Design principles (from the project spec)
 

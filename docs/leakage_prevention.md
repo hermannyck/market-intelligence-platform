@@ -348,3 +348,37 @@ structurally, in anticipation of later phases:
   sequence the stop-loss/take-profit scan depends on. `predictions`' own index (which *is*
   built from `prepare_dataset`'d walk-forward windows) still governs which bars are eligible to
   open a trade; only the scanning substrate needs to stay continuous.
+
+## Phase 13 (backend API)
+
+- **The API serves already-computed files, it doesn't recompute anything live** —
+  `app.services.repository` is a read layer over Phases 2-12's outputs (`data/features/`,
+  `models/*.json`, `data/news/scored_headlines.parquet`). There's no new leakage surface here
+  by construction: every number an endpoint returns was already produced, and verified not to
+  leak, by the phase that generated it.
+- **`/api/predictions` necessarily serves Phase 7's single-split baseline model, not a
+  walk-forward-validated one — worth understanding, not a bug.** Phase 8/12's walk-forward
+  validation retrains a *fresh* Pipeline per window and never persists that fitted model to
+  disk (only its predictions/metrics) — there is no single "final" walk-forward model to load,
+  by design (a walk-forward run produces N window-specific models, not one deployable
+  artifact). The only `.joblib` files that exist on disk come from Phase 7's baseline training,
+  so `find_latest_model`/`_predict_latest_row` load those. This is consistent with the
+  project's own scope (a research platform demonstrating methodology, not a live deployed
+  model) but is stated explicitly here rather than left as an implicit assumption a reader
+  might get wrong.
+- **Model performance by regime is derived from already-saved artifacts, not recomputed live**
+  (see `app.services.repository`'s module docstring) — joining Phase 12's saved trade log
+  against the `regime` column already in `data/features/` avoids re-running walk-forward
+  training (which retrains per window) inside an HTTP request.
+- **No PostgreSQL/Docker available in this development sandbox** — `app.config.SETTINGS.database_url`
+  still defaults to PostgreSQL (spec Section 17's stated choice, unchanged), but local testing
+  in this environment uses `DATABASE_URL=sqlite:///...` instead (see `README.md`'s run
+  instructions). `app/database/models.py::User` is written with plain, DB-agnostic column
+  types specifically so it works identically against both backends without special-casing —
+  this is a deployment-environment workaround, not a change to the documented production
+  target.
+- **Password hashing calls `bcrypt` directly, not through `passlib`** — `passlib`'s
+  `CryptContext` probes an attribute (`bcrypt.__about__.__version__`) that `bcrypt>=4.1`
+  removed, which breaks hashing entirely (not a security concern, a functional one). The
+  sibling `forex-ai-dashboard` project hit and fixed the identical issue the same way — see
+  `app/auth/security.py`'s module docstring.
