@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+.pytest_cache/
+
+# Node / frontend
+node_modules/
+dist/
+*.tsbuildinfo
+.vite_log.txt
+.uvicorn_log.txt
+
+# Env
+.env
+*.local
+
+# Data & models (raw/processed data and trained artifacts are reproducible from the
+# pipeline, not hand-authored — see data/README.md and docs/data_sources.md. Small
+# .gitkeep placeholders are exempted below.)
+data/raw/*
+data/processed/*
+data/features/*
+data/news/*
+!data/**/.gitkeep
+!data/**/README.md
+models/*
+!models/.gitkeep
+!models/README.md
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

@@ -1,0 +1,19 @@
+# Phase 1: local PostgreSQL only. The backend does not require this to be running yet
+# (see backend/app/database/session.py) — it's here so Phase 6+ has somewhere to point
+# DATABASE_URL once there's real data to persist.
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: mip_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: market_intelligence
+    ports:
+      - "5432:5432"
+    volumes:
+      - mip_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  mip_postgres_data:

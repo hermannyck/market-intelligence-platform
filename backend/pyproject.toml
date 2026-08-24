@@ -1,0 +1,9 @@
+[project]
+name = "market-intelligence-platform-backend"
+version = "0.1.0"
+description = "Backend for the AI-Powered Multi-Asset Market Intelligence and Explainable Trading Signal Prediction Platform"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
