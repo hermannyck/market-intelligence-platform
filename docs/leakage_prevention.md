@@ -175,6 +175,42 @@ structurally, in anticipation of later phases:
   period happened to resemble the training period. See `docs/model_card.md` for the full
   breakdown and why Phase 8's walk-forward validation exists precisely to address this.
 
+## Phase 8 (walk-forward validation)
+
+- **Every window is still trained fresh, with the same fit-on-train-only discipline as Phase
+  7** — `run_window()` calls `build_pipelines()` (new, unfitted pipelines) and fits each one
+  only on that window's own `train` slice. No state (scaler statistics, tree splits, anything)
+  ever carries over from one window to the next, and nothing is ever fit on a window's test
+  slice or on data outside that window entirely.
+- **Configured (calendar-date) windows vs. auto-generated fallback windows — never silently
+  substituted.** `app.config.DEFAULT_WALK_FORWARD_WINDOWS` gives the spec's exact 2021-2025
+  example, which fits D1 well but has zero real data for M15 (~60-90 days of history) and
+  often too little for H1 (~2 years) — both known limitations from Phase 2/3.
+  `resolve_configured_windows` marks a window `applicable` only if both its train and test
+  slices meet a minimum row count (`MIN_ROWS_PER_SPLIT = 30`); when *no* configured window is
+  applicable, `generate_fallback_windows` builds an expanding-window scheme purely from the
+  data that actually exists. Every window in every report carries an explicit
+  `"source": "configured"` or `"source": "auto_generated_fallback"` tag — a consumer of the
+  report always knows which kind of window produced a given result, rather than the two being
+  quietly merged into one undifferentiated "walk-forward result."
+- **Using `future_return` to score a prediction after the fact is not leakage** — the model
+  never sees it as an input feature (Phase 6/7 keep `future_return`/`target_threshold` out of
+  `ALL_FEATURE_COLUMNS`). `compute_trading_metrics` only reads it once a prediction already
+  exists, to compute what a trade following that prediction would have returned — the same
+  thing any retrospective evaluation of a trading signal does.
+- **Trading metrics here are a deliberately simplified diagnostic, not the real backtest** —
+  no transaction costs, spread, position sizing, or stop-loss/take-profit, and every trade is
+  assumed independently sized (no shared capital across concurrent trades). This is spec
+  Section 11's "clearly distinguish ML performance from trading performance" applied at the
+  walk-forward level; the realistic version is Phase 12's dedicated backtest engine. Nested
+  under `"trading"` in every model's metrics dict specifically so it's never conflated with
+  the classification metrics next to it.
+- **ROC-AUC is `None`, not a crash or a fabricated value, when it's undefined** — a small
+  window's test slice can end up missing one of the three classes entirely, which makes
+  one-vs-rest ROC-AUC mathematically undefined. `evaluate_with_roc_auc` catches exactly this
+  case and reports `None` (matching the spec's own "ROC-AUC where appropriate" wording) rather
+  than raising or silently substituting a placeholder number.
+
 ## To be filled in by later phases
 
 - Phase 9 (regime detection): confirmation regime labels at time *t* use no data after *t*.

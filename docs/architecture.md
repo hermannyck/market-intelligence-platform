@@ -15,12 +15,12 @@ real-money trading, or high-frequency trading.
 | `api/` | FastAPI routers, one per nav section | Phase 1 (stubs), Phase 13 (logic) |
 | `services/` | Data ingestion (Phase 2) + cleaning (Phase 3) orchestration | Phase 2-3 |
 | `features/` | Indicators (`indicators.py`, Phase 4) + derived features (`derived.py`) + multi-timeframe alignment (`multi_timeframe.py`) + orchestration (`feature_engineering.py`), Phase 5 | Phase 4-5 |
-| `ml/` | Target generation (`target.py`, Phase 6) + baseline models (`models.py`, Phase 7), walk-forward validation, ensemble | Phase 6-9 |
+| `ml/` | Target generation (`target.py`, Phase 6) + baseline models (`models.py`, Phase 7) + ensemble | Phase 6-9 |
 | `sentiment/` | News ingestion + FinBERT scoring | Phase 10 |
 | `regime/` | Market regime detection | Phase 9 |
 | `explainability/` | SHAP global/local explanations | Phase 11 |
 | `backtesting/` | Historical backtest engine | Phase 12 |
-| `validation/` | Walk-forward split logic, shared by ml/ and the dashboard's reporting | Phase 8 |
+| `validation/` | Walk-forward validation (`walk_forward.py`): configured-vs-fallback window resolution, per-window ML + simplified trading metrics, cross-window aggregation | Phase 8 |
 
 ## Data flow (target end state)
 

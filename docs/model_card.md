@@ -68,3 +68,43 @@ Full per-model metrics (precision/recall/F1, confusion matrices) are in
 - No claim about which of the 4 models is "best" — a single split's ranking is not reliable
   enough to draw that conclusion (see point 1 above); Experiment 1 (spec Section 20) revisits
   this properly once Phase 8 exists.
+
+## Phase 8 update — walk-forward validation (a more trustworthy read than the above)
+
+Ran `backend/app/validation/walk_forward.py` on all 12 combinations. Window counts varied by
+how much real history exists per timeframe (see `docs/leakage_prevention.md`): D1 got all 4
+configured 2021-2025 windows for every asset; H1/H4 mostly resolved to just 1 configured
+window (only ~2 years of H1/H4 history exists); M15 always fell back to 4 auto-generated
+windows (no real data before ~mid-2026). Full reports:
+`models/{asset}_{timeframe}_walk_forward_*.json`.
+
+**Accuracy is still near chance across the board** — same conclusion as Phase 7, now on more
+robust multi-window evidence: most model/asset/timeframe combinations land in the 0.30-0.43
+range.
+
+**One standout, reported with appropriate caution**: XAU/USD D1's SVM averaged **0.510
+accuracy across all 4 windows with a low std (0.035)** — i.e. consistently better than chance
+across 2022, 2023, 2024, and 2025 individually (0.466 / 0.508 / 0.504 / 0.563), not a fluke
+from one lucky window. This is the single most interesting result in the baseline+walk-forward
+work so far and is worth investigating further (SHAP explainability, Phase 11, is the natural
+next step to understand *why*) — but four ~250-row test windows is still a small evidence
+base, and gold's multi-year trending behavior over this specific historical period may not
+generalize.
+
+**A statistical footgun, caught and worth stating explicitly**: BTC/USD's H1 and H4 combinations
+show `accuracy_std = 0.0` in the aggregated report. This is **not** evidence of stability — it's
+an artifact of only 1 configured window having enough data to resolve for those combinations
+(`n_windows=1`), so "std across windows" is the standard deviation of a single number, which is
+trivially zero. Any consumer of `overall.*.accuracy_std` must check `accuracy_n_windows` first;
+a std computed from 1 window means nothing.
+
+**The simplified trading diagnostic overstates real profitability, on purpose, as a
+demonstration of why Phase 12 exists.** XAU/USD D1's SVM windows average a 60% simulated win
+rate and a **815% mean cumulative return** — which is not a realistic number. The diagnostic
+(spec Section 11) assumes zero transaction costs, no spread, no position sizing, and full
+reinvestment of an ever-growing position on every trade; it also shows a -65% average maximum
+drawdown even in this rosy simulation, meaning the equity curve implied here is far more
+volatile than the headline return suggests. This is exactly the gap between "ML performance"
+and "trading performance" the spec asks to be kept explicitly distinct — the realistic version,
+with costs, sizing, and drawdown-aware risk management, is Phase 12's dedicated backtest
+engine, not this diagnostic.

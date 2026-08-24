@@ -26,7 +26,7 @@ tracks what's actually built.
 
 ## Status
 
-Currently on **Phase 7 — Baseline ML models**. See `docs/architecture.md` for the module
+Currently on **Phase 8 — Walk-forward validation**. See `docs/architecture.md` for the module
 map and the full 16-phase roadmap. Each phase is built and verified before the next begins.
 
 | Phase | Status |
@@ -38,7 +38,7 @@ map and the full 16-phase roadmap. Each phase is built and verified before the n
 | 5. Feature engineering | ✅ done |
 | 6. Target generation | ✅ done |
 | 7. Baseline ML models | ✅ done |
-| 8. Walk-forward validation | not started |
+| 8. Walk-forward validation | ✅ done |
 | 9. Market regime detection | not started |
 | 10. News sentiment (FinBERT) | not started |
 | 11. SHAP explainability | not started |
@@ -127,7 +127,17 @@ cd backend
 .venv\Scripts\python -m app.ml.models
 ```
 
-**Database** (not required until Phase 8+)
+**Walk-forward validation** (Phase 8 — multiple expanding train/test windows per
+asset/timeframe; falls back to a data-driven window scheme where the spec's 2021-2025 example
+dates don't fit the actual history available, e.g. M15). Per-window ML metrics (incl.
+ROC-AUC) plus a simplified trading diagnostic, saved to `models/`.
+
+```bash
+cd backend
+.venv\Scripts\python -m app.validation.walk_forward
+```
+
+**Database** (not required until Phase 9+)
 
 ```bash
 docker compose up -d postgres
