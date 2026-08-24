@@ -56,6 +56,15 @@ def test_run_backtest_for_asset_timeframe_model_end_to_end(tmp_path):
     assert len(report["equity_curve"]) > 0
     assert report["num_oos_predictions"] > 0
 
+    # Phase 15: the full per-bar OOS signal series is persisted too, not just executed trades.
+    assert "signals" in report
+    assert len(report["signals"]) == report["num_oos_predictions"]
+    assert {s["signal"] for s in report["signals"]} <= {"BUY", "HOLD", "SELL"}
+    signal_timestamps = {s["timestamp"] for s in report["signals"]}
+    # Every executed trade's entry must have fired from a real BUY/SELL signal in that series.
+    for trade in report["trades"]:
+        assert trade["entry_time"] in signal_timestamps
+
 
 def test_run_backtest_raises_when_no_oos_predictions(tmp_path):
     features_dir = tmp_path / "features"

@@ -12,6 +12,7 @@ import ModelLabPage from "./pages/ModelLabPage";
 import WalkForwardValidationPage from "./pages/WalkForwardValidationPage";
 import BacktestingPage from "./pages/BacktestingPage";
 import NewsSentimentPage from "./pages/NewsSentimentPage";
+import ReplayPage from "./pages/ReplayPage";
 
 function Protected({ children }: { children: React.ReactNode }) {
   return (
@@ -38,6 +39,7 @@ export default function App() {
           />
           <Route path="/backtesting" element={<Protected><BacktestingPage /></Protected>} />
           <Route path="/news-sentiment" element={<Protected><NewsSentimentPage /></Protected>} />
+          <Route path="/replay" element={<Protected><ReplayPage /></Protected>} />
         </Routes>
       </SelectionProvider>
     </AuthProvider>

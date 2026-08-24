@@ -397,3 +397,85 @@ table.data-table th {
   border-radius: 2px;
   margin-right: 0.35rem;
 }
+
+/* --- Phase 15: historical replay controls --- */
+
+.replay-controls {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.replay-btn-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.replay-btn-row button {
+  font: inherit;
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface-1);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.replay-btn-row button.primary {
+  border-color: var(--series-1);
+  background: var(--series-1);
+  color: white;
+}
+
+.replay-btn-row button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.replay-btn-row select {
+  font: inherit;
+  padding: 0.4rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface-1);
+  color: var(--text-primary);
+}
+
+.replay-scrubber {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.replay-scrubber input[type="range"] {
+  flex: 1;
+  accent-color: var(--series-1);
+}
+
+.replay-scrubber .replay-position {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  min-width: 11rem;
+  text-align: right;
+}
+
+.replay-event-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+}
+
+.replay-event-row .stat-sub {
+  margin-top: 0;
+}

@@ -26,7 +26,7 @@ tracks what's actually built.
 
 ## Status
 
-Currently on **Phase 14 — React dashboard (real data)**. See `docs/architecture.md` for the
+Currently on **Phase 15 — Historical replay mode**. See `docs/architecture.md` for the
 module map and the full 16-phase roadmap. Each phase is built and verified before the next
 begins.
 
@@ -46,7 +46,7 @@ begins.
 | 12. Backtesting | ✅ done |
 | 13. Backend API (real endpoints) | ✅ done |
 | 14. React dashboard (real data) | ✅ done |
-| 15. Historical replay mode | not started |
+| 15. Historical replay mode | ✅ done |
 | 16. Testing and documentation | not started |
 
 ## Project layout
@@ -176,7 +176,11 @@ cd backend
 **Backtesting** (Phase 12 — the real engine: configurable capital, notional position sizing,
 transaction costs, spread, intrabar ATR-based stop-loss/take-profit, driven by genuinely
 out-of-sample walk-forward predictions, never the true label). Distinct from Phase 8's
-simplified trading diagnostic — see `docs/leakage_prevention.md`'s Phase 12 entry.
+simplified trading diagnostic — see `docs/leakage_prevention.md`'s Phase 12 entry. As of Phase
+15, the saved report also persists the full per-bar OOS `signals` series (not just the trades
+that resulted from it) — Historical Replay Mode's data source. Reports saved before Phase 15
+won't have this field (the "never overwrite" convention leaves them as-is); re-run this command
+to get a fresh report with `signals` included.
 
 ```bash
 cd backend
@@ -213,7 +217,12 @@ indicator charts, predictions with consensus, SHAP explainability, model lab, wa
 report, backtest equity curve + trade log, news sentiment timeline). Verified with a full
 manual click-through against real generated data (zero console errors); no automated frontend
 test suite (a deliberate scope decision, see `docs/architecture.md`'s Frontend structure
-section).
+section). **Phase 15 adds a 9th page, Historical Replay** — step or auto-play bar-by-bar
+through the walk-forward out-of-sample signal history for the selected asset/timeframe/model,
+watching the price chart, model signal, regime, and equity curve unfold together. Restricted by
+construction to bars with a genuine OOS signal — see `docs/leakage_prevention.md`'s Phase 15
+entry for why. Requires a Phase 15-or-later backtest report (re-run the command above if yours
+predates it).
 
 ```bash
 cd backend

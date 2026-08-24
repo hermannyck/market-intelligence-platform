@@ -14,6 +14,7 @@ export const NAV_ITEMS: NavItem[] = [
   { path: "/walk-forward-validation", label: "Walk-Forward Validation" },
   { path: "/backtesting", label: "Backtesting" },
   { path: "/news-sentiment", label: "News Sentiment" },
+  { path: "/replay", label: "Historical Replay" },
 ];
 
 export interface SelectOption<K extends string> {

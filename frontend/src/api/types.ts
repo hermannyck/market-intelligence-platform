@@ -139,6 +139,11 @@ export interface BacktestSummary {
   final_equity: number;
 }
 
+export interface Signal {
+  timestamp: string;
+  signal: TargetLabel;
+}
+
 export interface BacktestResponse {
   asset_key: Asset;
   timeframe: Timeframe;
@@ -147,6 +152,10 @@ export interface BacktestResponse {
   summary: BacktestSummary;
   trades: Trade[];
   equity_curve: { timestamp: string; equity: number }[];
+  // Phase 15: the full per-bar walk-forward out-of-sample signal series (BUY/HOLD/SELL) that
+  // drove this backtest -- a superset of `trades`, since a signal can fire with no trade
+  // opening (e.g. a position was already open). Powers Historical Replay Mode.
+  signals: Signal[];
 }
 
 export type PerformanceByRegime = Record<string, { num_trades: number; win_rate: number; avg_return_pct: number }>;

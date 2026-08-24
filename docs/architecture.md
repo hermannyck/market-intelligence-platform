@@ -52,15 +52,17 @@ DB just to serve it). The only table is `users` (the login gate). Endpoints:
 | `GET /api/explainability/{asset}/{timeframe}/{model}` | Latest SHAP global + local report |
 | `GET /api/model-lab/{asset}/{timeframe}` | Baseline comparison + walk-forward summary, all 4 models |
 | `GET /api/walk-forward/{asset}/{timeframe}` | Full walk-forward report |
-| `GET /api/backtesting/{asset}/{timeframe}/{model}` | Trade log, equity curve, summary |
+| `GET /api/backtesting/{asset}/{timeframe}/{model}` | Trade log, equity curve, summary, **+ full per-bar OOS `signals` (Phase 15)** |
 | `GET /api/backtesting/.../performance-by-regime` | Backtest trades joined against `regime` |
 | `GET /api/news-sentiment/{asset}` | Scored sample-news headlines |
 
 **No Dashboard-specific endpoint** — "Dashboard" (nav item #1) is frontend-composed from the
 others (Phase 14's job), matching Phase 1's original scaffold, which never stubbed a dedicated
-dashboard route either.
+dashboard route either. **No Historical Replay-specific endpoint either** (Phase 15) — the
+replay page composes the existing `market-analysis` and `backtesting` responses client-side;
+see the Frontend structure section below.
 
-## Frontend structure (Phase 1 scaffold, Phase 14 real data)
+## Frontend structure (Phase 1 scaffold, Phase 14 real data, Phase 15 replay mode)
 
 React + TypeScript + Vite. `src/services/navConfig.ts` is the single source of truth for the
 8 nav items (Section 13) plus the asset/timeframe/model selector options — pages and the
@@ -89,6 +91,16 @@ accepted any input).
   `forex-signal-predictor` project's own explicit choice for the same reason); verification for
   this phase was a full manual click-through of all 8 pages against the real backend and real
   generated data, checked for console errors at every step.
+- **`src/pages/ReplayPage.tsx` (Phase 15) — Historical Replay Mode**, a 9th page beyond the
+  spec's 8-page nav. Fetches `market-analysis` (a large `limit`) and `backtesting` (which now
+  also returns the full per-bar `signals` series — see Backend API above) for the current
+  asset/timeframe/model, and joins them client-side into a `ReplayFrame[]` timeline — filtered
+  to only bars with a real out-of-sample signal, so scrubbing through it can never show a
+  hindsight-informed frame (see `docs/leakage_prevention.md`'s Phase 15 entry for why this
+  filter is the whole point of the feature). Playback state (current index, playing/paused,
+  speed) is plain `useState`/`useEffect` with a `setInterval` driving the index forward — no new
+  library. Reuses `CandlestickChart` (a rolling window ending at the current frame) and
+  `EquityCurveChart` (progressively revealed) rather than introducing new chart components.
 
 ## Phase roadmap
 

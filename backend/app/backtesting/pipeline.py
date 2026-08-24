@@ -2,6 +2,15 @@
 `generate_oos_predictions` — each prediction from a model trained only on data before that test
 window), run the real backtest engine against them, save a report to `models/` — same
 never-overwrite convention as every prior phase.
+
+Phase 15 addition: the raw per-bar `predictions` series (already computed here, already
+verified genuinely out-of-sample by Phase 12's own tests) is now also persisted on the report
+as `"signals"` — not just the trades that resulted from it. `run_backtest` only ever *acts* on
+a signal when no position is already open, so a bar can carry a real BUY/SELL signal without a
+trade ever opening there. Historical Replay Mode (Phase 15) needs that full signal history to
+show "what the model said" at every evaluated bar, not only the subset that became executed
+trades. Nothing new is computed for this — it's the same object already flowing through this
+function, just no longer discarded after being fed to `run_backtest`.
 """
 from __future__ import annotations
 
@@ -31,7 +40,12 @@ class BacktestRunResult:
 
 
 def save_backtest_report(
-    asset_key: str, timeframe: Timeframe, model_name: ModelName, result: dict, num_predictions: int
+    asset_key: str,
+    timeframe: Timeframe,
+    model_name: ModelName,
+    result: dict,
+    num_predictions: int,
+    signals: list[dict] | None = None,
 ) -> Path:
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
@@ -57,6 +71,7 @@ def save_backtest_report(
         "summary": result["summary"],
         "trades": result["trades"],
         "equity_curve": result["equity_curve"],
+        "signals": signals or [],
     }
     path.write_text(json.dumps(report, indent=2))
     return path
@@ -75,7 +90,8 @@ def run_backtest_for_asset_timeframe_model(
     features_df, _ = find_latest_features(asset_key, timeframe)
     result = run_backtest(features_df, predictions, asset_key)
 
-    report_path = save_backtest_report(asset_key, timeframe, model_name, result, len(predictions))
+    signals = [{"timestamp": str(ts), "signal": sig} for ts, sig in predictions.sort_index().items()]
+    report_path = save_backtest_report(asset_key, timeframe, model_name, result, len(predictions), signals=signals)
     return BacktestRunResult(
         asset_key=asset_key,
         timeframe=timeframe.value,

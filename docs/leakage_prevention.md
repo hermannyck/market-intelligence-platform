@@ -398,3 +398,44 @@ structurally, in anticipation of later phases:
   entry above, the Predictions page necessarily displays Phase 7's single-split baseline
   model's output (not a walk-forward-validated model). Phase 14 surfaces this as-is; it does
   not relabel or reframe it as anything more validated than it is.
+
+## Phase 15 (historical replay mode)
+
+- **Replay is restricted, by construction, to bars that carry a genuine walk-forward
+  out-of-sample signal — this is the central design decision of this phase.** A naive "replay"
+  feature could easily invite exactly the kind of hindsight bias this project has spent 14
+  phases guarding against: stepping through a bar with a "prediction" that was actually
+  produced by a model that had already seen that bar (or the future) during training. Phase
+  15's frontend timeline is built by intersecting `data/features/`'s bars with the `signals`
+  array (see below) — a bar with no matching timestamp in `signals` simply never appears in the
+  replay, full stop. There is no code path that falls back to showing an unevaluated bar with a
+  placeholder signal.
+- **No new computation, no new leakage surface.** `app.validation.walk_forward.generate_oos_predictions`
+  already computes a full per-bar prediction series (verified genuinely out-of-sample by Phase
+  12's own tests — `test_generate_oos_predictions_covers_only_resolved_test_windows`); Phase 12's
+  backtest pipeline already held this series in memory before this phase, it just discarded it
+  after feeding it to `run_backtest`. Phase 15's only backend change is
+  `backtesting/pipeline.py::save_backtest_report` now also persisting that same, already-verified
+  series as `"signals"` on the report — nothing about how it's computed changed.
+- **`signals` is a strict superset of `trades`, and that gap is meaningful, not noise.** A
+  BUY/SELL signal is recorded here even for bars where `run_backtest` skipped opening a trade
+  because a position was already open (spec Section 11's "no overlapping trades" simplification —
+  see Phase 12's entry above). Historical Replay Mode surfaces this honestly: a bar can show a
+  real model signal with no corresponding "trade opened" event, which is the correct behavior,
+  not a bug — showing every signal as if it became a trade would misrepresent what the engine
+  actually did.
+- **Verified**: `test_run_backtest_for_asset_timeframe_model_end_to_end` (extended this phase)
+  asserts `len(report["signals"]) == report["num_oos_predictions"]` (nothing dropped or
+  duplicated in persistence) and that every trade's `entry_time` appears in the signals
+  timestamp set (a trade can never exist without a corresponding real signal backing it).
+- **Real finding: replay's final-bar equity can be a hair short of the backtest report's
+  `final_equity` — expected, not a bug.** `simulate_trade`'s stop-loss/take-profit scan runs
+  against the full continuous features dataset for up to `horizon_bars` bars ahead, not just
+  signal-covered bars — so a trade opened on the very last replayable (signal-bearing) bar can
+  still close a few bars later, on a bar that itself carries no OOS signal (just past the last
+  resolved test window) and therefore never appears as a replay frame. Confirmed on real EUR/
+  USD H1 random_forest: the replay's last frame shows 1,498 closed trades / $8,536.62 equity,
+  one trade and ~$1.23 short of the saved report's 1,499 trades / $8,535.39 — exactly the
+  in-flight final trade closing just outside the replayable range. The frontend's equity/trade
+  numbers are correct *for the bars actually shown*; they are not required to match the
+  report's grand totals bar-for-bar, and don't pretend to.
