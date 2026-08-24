@@ -88,10 +88,40 @@ structurally, in anticipation of later phases:
   Phase 5/6 decide whether/how to handle the remaining warmup NaNs when assembling the final
   training set.
 
-## To be filled in by later phases
+## Phase 5 (feature engineering: derived features + multi-timeframe alignment)
 
-- Multi-timeframe alignment (Phase 5): how a lower-timeframe row looks up its parent
-  higher-timeframe value without peeking at a not-yet-closed higher-timeframe bar.
+- **Bar timestamps are open times, not close times — this is the central hazard.** An H4 bar
+  labeled `00:00` spans `00:00`-`04:00` and only "closes" (becomes fully observed) at `04:00`.
+  `app.features.multi_timeframe.as_of_join` joins on **close time**
+  (`open + app.config.BAR_DURATION[timeframe]`) with a backward-direction `merge_asof`,
+  specifically so a target row can never see a same-or-coarser-timeframe bar that hadn't
+  actually finished forming yet. Verified concretely by
+  `test_as_of_join_only_sees_bars_that_have_actually_closed`, which reproduces exactly this
+  00:00-vs-04:00 scenario and asserts the H4 bar is invisible to H1 rows closing before 04:00
+  and visible from the instant it (04:00) onward.
+- **Symmetric for finer timeframes too.** The spec's multi-timeframe bias includes M15
+  direction even when the target is H1 (M15 is finer, not coarser). The same close-time as-of
+  join handles this correctly without a separate code path — "most recently closed bar" is
+  well-defined regardless of which side is finer.
+- **Derived features (EMA ratios, Bollinger width/position, returns) are pure functions of
+  already-verified-causal columns** — ratios of Phase 4's indicator outputs, and
+  `pct_change()` for returns (which by definition divides by an earlier value). Verified with
+  their own no-lookahead truncation test
+  (`test_returns_no_lookahead_when_computed_on_truncated_series`), mirroring Phase 4's.
+- **Real finding: multi-timeframe bias coverage is honestly sparse for older history**, a
+  direct consequence of the M15/H1 data-depth limitation documented in `docs/data_sources.md`.
+  On the real EUR/USD D1 feature set (5,769 rows): `M15_direction` is only populated for the
+  most recent 59 rows, `H1_direction` for 698, `H4_direction` for 692, while `D1_direction`
+  (D1's own) covers 5,720. `mtf_bias`'s majority vote gracefully degrades to whichever
+  timeframes actually have data (verified by
+  `test_attach_multi_timeframe_bias_majority_vote_and_graceful_degradation`) rather than
+  going NaN just because M15/H1 aren't available that far back — but any consumer of
+  `mtf_bias` on long-history D1 rows should know it's effectively a 1-2-timeframe vote for
+  most of that history, not a true 4-timeframe consensus. This is a data-availability fact,
+  not a code bug.
+- **Regime and sentiment are deliberately absent from this schema**, not stubbed with NaN
+  placeholders — see `data/features/README.md`. Phase 9/10 extend the schema when those
+  modules exist, rather than this phase guessing at a shape for data that doesn't exist yet.
 - Phase 6 (target generation): the exact leakage boundary between feature columns and the
   future-return-derived label.
 - Phase 7 (models): confirmation that `StandardScaler`/other preprocessing is fit only on

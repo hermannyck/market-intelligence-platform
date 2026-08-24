@@ -35,7 +35,7 @@ map and the full 16-phase roadmap. Each phase is built and verified before the n
 | 2. Historical data ingestion | ✅ done |
 | 3. Data cleaning and EDA | ✅ done |
 | 4. Five technical indicators | ✅ done |
-| 5. Feature engineering | not started |
+| 5. Feature engineering | ✅ done |
 | 6. Target generation | not started |
 | 7. Baseline ML models | not started |
 | 8. Walk-forward validation | not started |
@@ -97,6 +97,15 @@ OHLC removal, gap reporting, H4 derived from H1). See
 ```bash
 cd backend
 .venv\Scripts\python -m app.services.cleaning
+```
+
+**Feature engineering** (Phase 5 — `data/processed/` -> `data/features/`: the 5 indicators +
+derived ratios/returns + multi-timeframe bias, per asset/timeframe). See
+`docs/leakage_prevention.md` for how look-ahead is avoided in the multi-timeframe join.
+
+```bash
+cd backend
+.venv\Scripts\python -m app.features.feature_engineering
 ```
 
 **Database** (not required until Phase 6+)

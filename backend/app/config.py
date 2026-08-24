@@ -16,6 +16,8 @@ import os
 from dataclasses import dataclass, field
 from enum import Enum
 
+import pandas as pd
+
 
 # ---------------------------------------------------------------------------
 # 1. Assets
@@ -87,6 +89,18 @@ TIMEFRAME_DATA_DEPTH = {
     Timeframe.H1: {"yfinance_interval": "60m", "max_lookback_days": 730, "is_backbone": False},
     Timeframe.H4: {"yfinance_interval": "60m", "max_lookback_days": 730, "is_backbone": False},  # resampled from H1
     Timeframe.D1: {"yfinance_interval": "1d", "max_lookback_days": None, "is_backbone": True},
+}
+
+# A bar's timestamp is its OPEN time (standard OHLC convention) -- it is only "available"
+# (fully observed, safe to use as a feature) at open + duration, i.e. its CLOSE time. This is
+# the single source of truth for that duration, used by both the H1->H4 resampling (Phase 3)
+# and every multi-timeframe as-of lookup (Phase 5) to avoid treating a still-forming bar as
+# already closed.
+BAR_DURATION: dict[Timeframe, pd.Timedelta] = {
+    Timeframe.M15: pd.Timedelta(minutes=15),
+    Timeframe.H1: pd.Timedelta(hours=1),
+    Timeframe.H4: pd.Timedelta(hours=4),
+    Timeframe.D1: pd.Timedelta(days=1),
 }
 
 

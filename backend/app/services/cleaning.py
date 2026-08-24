@@ -19,20 +19,16 @@ from pathlib import Path
 
 import pandas as pd
 
-from app.config import ASSETS, Timeframe
+from app.config import ASSETS, BAR_DURATION, Timeframe
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 RAW_DIR = PROJECT_ROOT / "data" / "raw"
 PROCESSED_DIR = PROJECT_ROOT / "data" / "processed"
 
-# Expected bar spacing per timeframe, used only to *report* gaps (weekends, exchange
-# downtime) for human/EDA review -- never to fabricate or fill missing bars.
-_EXPECTED_BAR_SPACING = {
-    Timeframe.M15: pd.Timedelta(minutes=15),
-    Timeframe.H1: pd.Timedelta(hours=1),
-    Timeframe.H4: pd.Timedelta(hours=4),
-    Timeframe.D1: pd.Timedelta(days=1),
-}
+# Expected bar spacing per timeframe (app.config.BAR_DURATION), used only to *report* gaps
+# (weekends, exchange downtime) for human/EDA review -- never to fabricate or fill missing
+# bars.
+_EXPECTED_BAR_SPACING = BAR_DURATION
 
 _RAW_OHLCV_COLUMNS = {"Open": "open", "High": "high", "Low": "low", "Close": "close", "Volume": "volume"}
 
