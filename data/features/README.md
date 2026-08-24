@@ -20,9 +20,15 @@ Every column is computed using only information available at that row's timestam
   one** — once Phase 6 runs, the latest file includes the target; a consumer just wants
   whatever's newest, same convention as `data/raw/`/`data/processed/`.
 
-**Not yet included**: market regime (Phase 9) and news sentiment (Phase 10). These will
-extend this schema via a timestamp+asset join once those modules exist, rather than this
-phase guessing at their shape ahead of time.
+- Market regime (Phase 9, `backend/app/regime/detector.py`): `volatility_zscore`,
+  `trend_strength`, and `regime` (one of Bullish Trending / Bearish Trending /
+  Sideways-Range-Bound / High Volatility / Low Volatility) — rule-based, not clustering, for
+  this live feature; see `docs/leakage_prevention.md`'s Phase 9 entry for why. Real
+  distribution across all 12 combos: Sideways dominates (43-57%), Trending is rare (1-8%
+  combined) — see `notebooks/phase9_regime_detection_eda.ipynb`.
+
+**Not yet included**: news sentiment (Phase 10). Will extend this schema via a timestamp+asset
+join once that module exists, rather than this phase guessing at its shape ahead of time.
 
 Every manifest's `source_processed_manifests` (or, for labeled files, `source_features_manifest`)
 traces back to the exact upstream file(s) used to build it — full provenance chain back to the

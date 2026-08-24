@@ -211,8 +211,36 @@ structurally, in anticipation of later phases:
   case and reports `None` (matching the spec's own "ROC-AUC where appropriate" wording) rather
   than raising or silently substituting a placeholder number.
 
+## Phase 9 (market regime detection)
+
+- **Rule-based, not clustering, for the live per-bar feature — a leakage decision, not just a
+  simplicity preference.** A clustering model's centroids are normally fit once on a dataset;
+  fitting on the *entire* historical series (as is standard practice for KMeans) and then
+  using those centroids to label an early row would leak the full dataset's distribution
+  (including bars far in the future relative to that row) into a "historical" label. The
+  rule-based `classify_regime` avoids this entirely — every input (`trend_strength`,
+  `volatility_zscore`, EMA relationships) is a rolling/point-in-time calculation using only
+  bars ≤ t, with zero fitting step. `cluster_regimes_exploratory` implements clustering too
+  (spec Section 6's "consider... if appropriate"), but its own docstring states plainly that
+  it's fit on the whole series and is for retrospective/EDA comparison only — never saved as a
+  feature, never consumed by any model. See `notebooks/phase9_regime_detection_eda.ipynb` for
+  the comparison itself.
+- **Verified, not assumed, no-lookahead**: `test_no_lookahead_regime_matches_when_computed_on_truncated_series`
+  recomputes `volatility_zscore`/`trend_strength`/`regime` on a truncated series and asserts
+  every value up to the truncation point is bit-identical to the full-series computation —
+  the same pattern used for indicators (Phase 4) and derived features (Phase 5).
+- **Volatility is checked before trend, an explicit priority, not an accident.** The five
+  labels span two different axes (trend direction/strength vs. volatility level) that the spec
+  collapses into one categorical variable; `classify_regime` resolves the overlap by checking
+  volatility extremes first (see the module docstring for the rationale) — documented so the
+  priority order is a visible design decision, not a hidden tie-break.
+- **Real finding**: trending regimes (Bullish + Bearish combined) are rare in practice — 1-8%
+  of labeled bars across all 12 real combinations, because the rule requires *both* a strong
+  trend-strength move *and* full EMA alignment simultaneously. Sideways/Range-Bound dominates
+  (43-57%). See the Phase 9 notebook for the full breakdown and a discussion of whether
+  `REGIME.trend_strength_threshold` should be revisited.
+
 ## To be filled in by later phases
 
-- Phase 9 (regime detection): confirmation regime labels at time *t* use no data after *t*.
 - Phase 10 (sentiment): confirmation no article published after the prediction timestamp is
   used.

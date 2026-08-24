@@ -26,7 +26,7 @@ tracks what's actually built.
 
 ## Status
 
-Currently on **Phase 8 — Walk-forward validation**. See `docs/architecture.md` for the module
+Currently on **Phase 9 — Market regime detection**. See `docs/architecture.md` for the module
 map and the full 16-phase roadmap. Each phase is built and verified before the next begins.
 
 | Phase | Status |
@@ -39,7 +39,7 @@ map and the full 16-phase roadmap. Each phase is built and verified before the n
 | 6. Target generation | ✅ done |
 | 7. Baseline ML models | ✅ done |
 | 8. Walk-forward validation | ✅ done |
-| 9. Market regime detection | not started |
+| 9. Market regime detection | ✅ done |
 | 10. News sentiment (FinBERT) | not started |
 | 11. SHAP explainability | not started |
 | 12. Backtesting | not started |
@@ -137,7 +137,17 @@ cd backend
 .venv\Scripts\python -m app.validation.walk_forward
 ```
 
-**Database** (not required until Phase 9+)
+**Market regime detection** (Phase 9 — rule-based Bullish/Bearish Trending, Sideways/
+Range-Bound, High/Low Volatility, appended to `data/features/`). See
+`notebooks/phase9_regime_detection_eda.ipynb` for the distribution/clustering-comparison
+writeup.
+
+```bash
+cd backend
+.venv\Scripts\python -m app.regime.pipeline
+```
+
+**Database** (not required until Phase 10+)
 
 ```bash
 docker compose up -d postgres

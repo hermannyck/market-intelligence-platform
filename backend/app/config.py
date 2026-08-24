@@ -187,6 +187,32 @@ BACKTEST = BacktestConfig()
 
 
 # ---------------------------------------------------------------------------
+# 6b. Market regime detection (Section 6) — five labels, rule-based on trend
+#     strength + volatility + EMA relationships + ATR, all using only past/current
+#     bars. Thresholds configurable, not hardcoded in the detector.
+# ---------------------------------------------------------------------------
+
+class RegimeLabel(str, Enum):
+    BULLISH_TRENDING = "Bullish Trending"
+    BEARISH_TRENDING = "Bearish Trending"
+    SIDEWAYS = "Sideways / Range-Bound"
+    HIGH_VOLATILITY = "High Volatility"
+    LOW_VOLATILITY = "Low Volatility"
+
+
+@dataclass(frozen=True)
+class RegimeConfig:
+    trend_lookback_bars: int = 20        # bars used to measure the price move for trend strength
+    volatility_lookback_bars: int = 100  # bars used to build each row's own recent volatility distribution
+    trend_strength_threshold: float = 1.0    # in ATR-normalized units -- see regime/detector.py
+    volatility_high_zscore: float = 1.0      # rolling z-score above which volatility is "High"
+    volatility_low_zscore: float = -1.0      # rolling z-score below which volatility is "Low"
+
+
+REGIME = RegimeConfig()
+
+
+# ---------------------------------------------------------------------------
 # 7. Models (Section 8) — exactly these four, per the spec.
 # ---------------------------------------------------------------------------
 
