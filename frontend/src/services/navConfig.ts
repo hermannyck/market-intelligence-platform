@@ -16,15 +16,30 @@ export const NAV_ITEMS: NavItem[] = [
   { path: "/news-sentiment", label: "News Sentiment" },
 ];
 
-export const ASSETS = ["EUR/USD", "BTC/USD", "XAU/USD"] as const;
-export const TIMEFRAMES = ["M15", "H1", "H4", "D1"] as const;
-export const MODELS = [
-  "Logistic Regression",
-  "Random Forest",
-  "SVM",
-  "XGBoost",
-  "Ensemble",
-] as const;
+export interface SelectOption<K extends string> {
+  key: K;
+  label: string;
+}
+
+export const ASSETS: SelectOption<"EURUSD" | "BTCUSD" | "XAUUSD">[] = [
+  { key: "EURUSD", label: "EUR/USD" },
+  { key: "BTCUSD", label: "BTC/USD" },
+  { key: "XAUUSD", label: "XAU/USD" },
+];
+
+export const TIMEFRAMES: SelectOption<"M15" | "H1" | "H4" | "D1">[] = [
+  { key: "M15", label: "M15" },
+  { key: "H1", label: "H1" },
+  { key: "H4", label: "H4" },
+  { key: "D1", label: "D1" },
+];
+
+export const MODELS: SelectOption<"logistic_regression" | "random_forest" | "svm" | "xgboost">[] = [
+  { key: "logistic_regression", label: "Logistic Regression" },
+  { key: "random_forest", label: "Random Forest" },
+  { key: "svm", label: "SVM" },
+  { key: "xgboost", label: "XGBoost" },
+];
 
 export const NOT_LIVE_TRADING_DISCLAIMER =
   "This platform operates entirely on historical data for research and education. " +

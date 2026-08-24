@@ -60,13 +60,35 @@ DB just to serve it). The only table is `users` (the login gate). Endpoints:
 others (Phase 14's job), matching Phase 1's original scaffold, which never stubbed a dedicated
 dashboard route either.
 
-## Frontend structure
+## Frontend structure (Phase 1 scaffold, Phase 14 real data)
 
 React + TypeScript + Vite. `src/services/navConfig.ts` is the single source of truth for the
 8 nav items (Section 13) plus the asset/timeframe/model selector options — pages and the
 sidebar both read from it so they can't drift apart. A lightweight JWT login gate (kept per
 the user's explicit choice, not required by the spec) sits in front of all 8 pages via
-`ProtectedRoute`.
+`ProtectedRoute`, now against the real Phase 13 `/api/auth` endpoints (Phase 1's version
+accepted any input).
+
+- `src/api/client.ts` + `types.ts` — a small typed fetch wrapper (token attached from
+  `localStorage` automatically) and TypeScript types mirroring the backend's JSON shapes.
+  Deliberately loose/`unknown`-tolerant in places, matching Phase 13's own choice not to wrap
+  every response in a rigid schema.
+- `src/hooks/useApiData.ts` — the one data-fetching hook every page uses: tracks
+  loading/error/not-found uniformly, and treats a 404 as "this pipeline phase hasn't been run
+  for this combination yet" (rendered as a friendly empty state) rather than a hard error.
+- `src/hooks/useSelection.tsx` — the asset/timeframe/model selection state lives here (not in
+  each page), so the sidebar's selectors drive every page's data fetch consistently.
+- `src/charts/` — Recharts-based components: `CandlestickChart` (built from two layered range
+  Bars — a thin wick + wider body — since Recharts has no native candlestick), indicator mini
+  charts (RSI/MACD/ATR), `EquityCurveChart`, `ShapBarChart` (global importance and signed local
+  explanations), `SentimentTimelineChart`, `RegimeDistributionChart`.
+- Design tokens (`index.css`) follow the project's `dataviz` skill palette — light/dark aware
+  CSS custom properties (`--series-1..8`, `--status-good/warning/serious/critical`, etc.),
+  BUY/HOLD/SELL always rendered as colored badges, never color-only.
+- No frontend automated test suite — a deliberate scope decision (matching the sibling
+  `forex-signal-predictor` project's own explicit choice for the same reason); verification for
+  this phase was a full manual click-through of all 8 pages against the real backend and real
+  generated data, checked for console errors at every step.
 
 ## Phase roadmap
 

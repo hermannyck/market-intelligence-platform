@@ -1,17 +1,42 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DisclaimerBanner from "../components/DisclaimerBanner";
 import { useAuth } from "../hooks/useAuth";
+import { ApiError } from "../api/client";
 
-// Phase 1 note: accepts any input and "logs in" locally. Real credential handling against
-// the backend's /api/auth endpoints lands once that router has logic behind it (Phase 13).
+// Phase 13: real register/login against the backend's /api/auth endpoints, replacing Phase
+// 1's stub that accepted any input.
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, register } = useAuth();
   const navigate = useNavigate();
+  const [mode, setMode] = useState<"login" | "register">("login");
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  function handleSubmit(event: React.FormEvent) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    login();
-    navigate("/", { replace: true });
+    setError(null);
+    const form = new FormData(event.currentTarget);
+    const email = String(form.get("email") ?? "");
+    const password = String(form.get("password") ?? "");
+
+    setSubmitting(true);
+    try {
+      if (mode === "login") {
+        await login(email, password);
+      } else {
+        await register(email, password);
+      }
+      navigate("/", { replace: true });
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError("Could not reach the backend API. Is it running?");
+      }
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -25,14 +50,27 @@ export default function LoginPage() {
         </label>
         <label>
           Password
-          <input type="password" name="password" required />
+          <input type="password" name="password" required minLength={mode === "register" ? 8 : undefined} />
         </label>
         <label className="acknowledge">
           <input type="checkbox" required />
           I understand this is a research tool operating on historical data only.
         </label>
-        <button type="submit">Enter platform</button>
+        {error && <div className="error">{error}</div>}
+        <button type="submit" disabled={submitting}>
+          {submitting ? "Please wait…" : mode === "login" ? "Log in" : "Create account"}
+        </button>
       </form>
+      <button
+        type="button"
+        className="link-button"
+        onClick={() => {
+          setMode(mode === "login" ? "register" : "login");
+          setError(null);
+        }}
+      >
+        {mode === "login" ? "Need an account? Register" : "Already have an account? Log in"}
+      </button>
     </div>
   );
 }

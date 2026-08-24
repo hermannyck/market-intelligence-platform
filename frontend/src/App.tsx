@@ -1,5 +1,6 @@
 import { Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./hooks/useAuth";
+import { SelectionProvider } from "./hooks/useSelection";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Layout from "./components/Layout";
 import LoginPage from "./pages/LoginPage";
@@ -23,20 +24,22 @@ function Protected({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <AuthProvider>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/" element={<Protected><DashboardPage /></Protected>} />
-        <Route path="/market-analysis" element={<Protected><MarketAnalysisPage /></Protected>} />
-        <Route path="/predictions" element={<Protected><PredictionsPage /></Protected>} />
-        <Route path="/explainability" element={<Protected><ExplainabilityPage /></Protected>} />
-        <Route path="/model-lab" element={<Protected><ModelLabPage /></Protected>} />
-        <Route
-          path="/walk-forward-validation"
-          element={<Protected><WalkForwardValidationPage /></Protected>}
-        />
-        <Route path="/backtesting" element={<Protected><BacktestingPage /></Protected>} />
-        <Route path="/news-sentiment" element={<Protected><NewsSentimentPage /></Protected>} />
-      </Routes>
+      <SelectionProvider>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/" element={<Protected><DashboardPage /></Protected>} />
+          <Route path="/market-analysis" element={<Protected><MarketAnalysisPage /></Protected>} />
+          <Route path="/predictions" element={<Protected><PredictionsPage /></Protected>} />
+          <Route path="/explainability" element={<Protected><ExplainabilityPage /></Protected>} />
+          <Route path="/model-lab" element={<Protected><ModelLabPage /></Protected>} />
+          <Route
+            path="/walk-forward-validation"
+            element={<Protected><WalkForwardValidationPage /></Protected>}
+          />
+          <Route path="/backtesting" element={<Protected><BacktestingPage /></Protected>} />
+          <Route path="/news-sentiment" element={<Protected><NewsSentimentPage /></Protected>} />
+        </Routes>
+      </SelectionProvider>
     </AuthProvider>
   );
 }

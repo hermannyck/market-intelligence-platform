@@ -26,8 +26,9 @@ tracks what's actually built.
 
 ## Status
 
-Currently on **Phase 13 — Backend API**. See `docs/architecture.md` for the module
-map and the full 16-phase roadmap. Each phase is built and verified before the next begins.
+Currently on **Phase 14 — React dashboard (real data)**. See `docs/architecture.md` for the
+module map and the full 16-phase roadmap. Each phase is built and verified before the next
+begins.
 
 | Phase | Status |
 |---|---|
@@ -44,7 +45,7 @@ map and the full 16-phase roadmap. Each phase is built and verified before the n
 | 11. SHAP explainability | ✅ done |
 | 12. Backtesting | ✅ done |
 | 13. Backend API (real endpoints) | ✅ done |
-| 14. React dashboard (real data) | not started |
+| 14. React dashboard (real data) | ✅ done |
 | 15. Historical replay mode | not started |
 | 16. Testing and documentation | not started |
 
@@ -75,13 +76,16 @@ pytest                                           # 150+ tests (a few are @pytest
 uvicorn app.main:app --reload                    # serves http://127.0.0.1:8000 -- see /docs for the full API
 ```
 
-**Frontend**
+**Frontend** (Phase 14 — real API integration: typed client, JWT auth against `/api/auth`,
+asset/timeframe/model selectors driving every page, 6 Recharts components). On Windows, if
+`npm run dev` can't find `node` because PATH isn't inherited by your shell, use
+`frontend/dev-server.cmd` instead, which sets `PATH` explicitly before calling `npm run dev`.
 
 ```bash
 cd frontend
 npm install
 npm run build   # type-checks + production build
-npm run dev      # serves http://127.0.0.1:5173 — login screen -> 8 nav page stubs
+npm run dev      # serves http://127.0.0.1:5173 — login/register -> 8 real data-driven pages
 ```
 
 **Data ingestion** (Phase 2 — pulls EUR/USD, BTC/USD, XAU/USD across M15/H1/D1 into
@@ -203,6 +207,22 @@ If Docker/PostgreSQL aren't available (this project was developed without either
 use SQLite for local dev instead — set `DATABASE_URL=sqlite:///./dev.db` before running the
 server or tests. `app/database/models.py::User` uses plain, DB-agnostic column types so it
 works identically either way.
+
+**React dashboard** (Phase 14 — all 8 nav pages wired to the real Phase 13 API: candlestick +
+indicator charts, predictions with consensus, SHAP explainability, model lab, walk-forward
+report, backtest equity curve + trade log, news sentiment timeline). Verified with a full
+manual click-through against real generated data (zero console errors); no automated frontend
+test suite (a deliberate scope decision, see `docs/architecture.md`'s Frontend structure
+section).
+
+```bash
+cd backend
+.venv\Scripts\uvicorn app.main:app --reload
+# in a second terminal:
+cd frontend
+npm run dev
+# open http://127.0.0.1:5173, register an account, and log in
+```
 
 ## Design principles (from the project spec)
 

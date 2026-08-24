@@ -382,3 +382,19 @@ structurally, in anticipation of later phases:
   removed, which breaks hashing entirely (not a security concern, a functional one). The
   sibling `forex-ai-dashboard` project hit and fixed the identical issue the same way — see
   `app/auth/security.py`'s module docstring.
+
+## Phase 14 (React dashboard)
+
+- **No new leakage surface — stated explicitly rather than left implicit.** The frontend
+  only renders whatever `services/repository.py` (Phase 13) already returns; it performs no
+  computation of its own (no client-side indicator/target/metric math), so there is nothing
+  in this phase that could introduce a look-ahead bug. This was true by construction, and
+  confirmed by review of every page component: each one is a straight fetch-and-render.
+  Verified concretely, not just assumed — live-tested the Explainability and Backtesting
+  pages for XAU/USD D1 SVM and confirmed the rendered numbers match Phase 11's SHAP report and
+  Phase 12's backtest summary exactly, i.e. the frontend is a transparent window onto
+  already-verified data, not a second, independent computation that could silently diverge.
+- **The one caveat inherited, not created, here**: as already documented in the Phase 13
+  entry above, the Predictions page necessarily displays Phase 7's single-split baseline
+  model's output (not a walk-forward-validated model). Phase 14 surfaces this as-is; it does
+  not relabel or reframe it as anything more validated than it is.

@@ -16,6 +16,11 @@ dist/
 .env
 *.local
 
+# Local dev database (Phase 13 -- SQLite fallback when Postgres/Docker aren't available;
+# see README.md's Database section)
+backend/dev.db
+*.db-journal
+
 # Data & models (raw/processed data and trained artifacts are reproducible from the
 # pipeline, not hand-authored — see data/README.md and docs/data_sources.md. Small
 # .gitkeep placeholders are exempted below.)
