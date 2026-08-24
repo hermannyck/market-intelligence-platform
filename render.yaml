@@ -1,0 +1,44 @@
+# Render Blueprint (https://render.com/docs/blueprint-spec) for the backend + its database.
+# Deploy: push this repo to GitHub, then in Render "New +" -> "Blueprint" -> point at the repo.
+# See docs/deploying.md for the full walkthrough, including the frontend (hosted separately on
+# Vercel/Netlify -- this blueprint only covers what actually needs a server: the API + DB).
+#
+# data/ and models/ (Phases 2-12's gitignored, reproducible-via-pipeline output) are symlinked
+# into the persistent disk below rather than the disk being mounted directly over `data/` or
+# `models/` -- this avoids hardcoding Render's absolute filesystem prefix (which this project
+# can't verify without a real account) while still surviving redeploys. Re-run once by hand.
+services:
+  - type: web
+    name: market-intelligence-platform-api
+    runtime: python
+    plan: free
+    buildCommand: >-
+      mkdir -p /data/mip-data /data/mip-models &&
+      ln -sfn /data/mip-data ./data &&
+      ln -sfn /data/mip-models ./models &&
+      cd backend &&
+      pip install torch --index-url https://download.pytorch.org/whl/cpu &&
+      pip install -r requirements.txt
+    startCommand: cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    disk:
+      name: mip-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true   # Render generates a strong random secret -- never commit one
+      - key: DATABASE_URL
+        fromDatabase:
+          name: market-intelligence-platform-db
+          property: connectionString
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false   # set manually once you know your Vercel/Netlify URL -- see docs/deploying.md
+
+databases:
+  - name: market-intelligence-platform-db
+    plan: free
+    databaseName: market_intelligence
+    user: mip

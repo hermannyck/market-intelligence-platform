@@ -298,9 +298,27 @@ class Settings:
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60 * 12
     environment: str = os.environ.get("APP_ENV", "development")
+    # Deployment (see docs/deploying.md): comma-separated list of allowed frontend origins,
+    # e.g. "https://your-app.vercel.app,https://your-app-git-main.vercel.app". Defaults to the
+    # local Vite dev server only -- a deployed backend MUST set this via env var, or the
+    # deployed frontend's requests will be blocked by CORS.
+    cors_allowed_origins: tuple[str, ...] = tuple(
+        origin.strip()
+        for origin in os.environ.get(
+            "CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173"
+        ).split(",")
+        if origin.strip()
+    )
 
 
 SETTINGS = Settings()
+
+if SETTINGS.environment == "production" and SETTINGS.jwt_secret == "dev-secret-change-me":
+    raise RuntimeError(
+        "APP_ENV=production but JWT_SECRET is still the dev default -- set a real random "
+        "secret (e.g. `python -c \"import secrets; print(secrets.token_hex(32))\"`) via the "
+        "JWT_SECRET environment variable before deploying. See docs/deploying.md."
+    )
 
 
 # ---------------------------------------------------------------------------

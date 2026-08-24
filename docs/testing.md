@@ -5,7 +5,7 @@ already shipped its own tests as it was built — Phase 16 doesn't retrofit test
 code; it closes real, checked gaps, adds a first frontend test suite, and writes this document
 so the state of testing is a fact anyone can verify, not a claim to take on faith.
 
-## Backend: 160 tests, 91% statement coverage
+## Backend: 164 tests, 91% statement coverage
 
 ```bash
 cd backend
@@ -14,7 +14,7 @@ cd backend
 ```
 
 Coverage is measured with `pytest-cov` (added this phase — see `requirements.txt`), not
-guessed. The real number as of Phase 16: **91% of `app/`'s 1,746 statements**, 160 tests, one
+guessed. The real number as of Phase 16: **91% of `app/`'s 1,749 statements**, 164 tests, one
 test file per module (`tests/test_<module>.py`), covering:
 
 - Every no-lookahead/leakage-boundary claim made in `docs/leakage_prevention.md` has a test
@@ -30,6 +30,18 @@ test file per module (`tests/test_<module>.py`), covering:
 - The backtest engine's defensive branches (added this phase): unsorted input rejected, a
   signal timestamp absent from the OHLC dataset skipped rather than raising `KeyError`, and an
   invalid ATR/price at a signal bar skipped rather than sizing a nonsensical stop.
+- The deployment-safety guard added alongside `docs/deploying.md`
+  (`tests/test_config_deployment_guard.py`): `APP_ENV=production` with the dev-default
+  `JWT_SECRET` refuses to start; a real secret starts fine; the dev-default is still fine when
+  `APP_ENV` isn't `production`; `CORS_ALLOWED_ORIGINS` parses a comma-separated env var
+  correctly. Run as subprocesses, not in-process — the guard fires as a module-level side
+  effect at import time, and `app.config` is already imported by the time any test module runs,
+  so an in-process `importlib.reload` would leave stale state in every other module that
+  cached `SETTINGS` at import time. (Coverage tooling note: because these run in separate
+  processes, `--cov=app` doesn't necessarily attribute their execution back to `config.py`'s
+  guard lines the way it would for an in-process test — the behavior is still directly
+  verified via `subprocess.CompletedProcess.returncode`/`stderr` assertions, just not by
+  watching line-by-line coverage of the child process.)
 
 ### What's intentionally not covered, and why
 

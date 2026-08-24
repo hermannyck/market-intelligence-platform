@@ -118,6 +118,18 @@ data-corruption bug this project's leakage discipline exists to catch.
 - New `docs/testing.md` (test strategy, real coverage numbers, what's intentionally excluded
   and why) and this changelog.
 
+## Post-Phase-16 — Deployment readiness
+
+Not a numbered phase (the 16-phase spec was already complete) — a follow-up when the user asked
+how to make the app publicly reachable. Added `docs/deploying.md` (a runbook: backend + Postgres
+on Render via the new `render.yaml`, frontend as a static build on Vercel), `backend/.env.example`,
+and a startup guard in `app/config.py` that refuses to run with `APP_ENV=production` while
+`JWT_SECRET` is still the local dev default. `backend/app/main.py`'s CORS origins moved from a
+hardcoded localhost-only list to `CORS_ALLOWED_ORIGINS`, an env var with the same local default
+— no behavior change for local dev, required for a real deployed frontend origin to work at all.
+4 new tests (`tests/test_config_deployment_guard.py`, run via subprocess since the guard fires
+at module-import time).
+
 See `README.md` for current setup/run instructions and `docs/architecture.md` for the module
 map. This platform is **not a live trading system** — see the disclaimer at the top of
 `README.md`.

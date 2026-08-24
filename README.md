@@ -234,6 +234,14 @@ npm run dev
 # open http://127.0.0.1:5173, register an account, and log in
 ```
 
+## Deploying this publicly
+
+Everything above runs locally. To put it on the public internet (a real URL anyone can open),
+see **`docs/deploying.md`** — a step-by-step runbook (backend + Postgres on Render via the
+included `render.yaml`, frontend as a static build on Vercel), plus the environment variables
+you need to set (`backend/.env.example`) and a startup safety check that refuses to run in
+production with the default JWT secret.
+
 ## Design principles (from the project spec)
 
 1. Correctness
