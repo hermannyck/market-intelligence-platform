@@ -7,11 +7,16 @@
 # into the persistent disk below rather than the disk being mounted directly over `data/` or
 # `models/` -- this avoids hardcoding Render's absolute filesystem prefix (which this project
 # can't verify without a real account) while still surviving redeploys. Re-run once by hand.
+#
+# plan: starter (not free) -- Render's free-tier web services don't support persistent disks at
+# all ("disks are not supported for free tier services"), and this project needs one: without a
+# disk, data/models would need regenerating from scratch every time a free-tier service spins
+# down from inactivity and back up (see docs/deploying.md's cost/limits section).
 services:
   - type: web
     name: market-intelligence-platform-api
     runtime: python
-    plan: free
+    plan: starter
     buildCommand: >-
       mkdir -p /data/mip-data /data/mip-models &&
       ln -sfn /data/mip-data ./data &&

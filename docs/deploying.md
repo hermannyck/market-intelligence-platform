@@ -29,11 +29,16 @@ is the other documented option (more control, more maintenance) — not covered 
 ## 1. Backend + database (Render)
 
 This repo includes `render.yaml` (a [Blueprint](https://render.com/docs/blueprint-spec)) that
-defines the API service and a free Postgres instance together.
+defines the API service and a Postgres instance together. The web service is on Render's
+**Starter plan (~$7/mo)**, not free — free-tier web services don't support persistent disks at
+all, and this project needs one so `data/`/`models/` survive restarts and redeploys instead of
+needing to be regenerated from scratch every time the service spins down from inactivity.
 
 1. Render dashboard → **New +** → **Blueprint** → connect the GitHub repo → Render reads
-   `render.yaml` and proposes the `market-intelligence-platform-api` web service plus the
-   `market-intelligence-platform-db` Postgres database. Apply it.
+   `render.yaml` and proposes the `market-intelligence-platform-api` web service (Starter plan)
+   plus the `market-intelligence-platform-db` Postgres database (free plan — Postgres itself
+   doesn't need a disk to persist, so it can stay free; see the note below on its own limits).
+   Apply it.
 2. Render auto-generates `JWT_SECRET` and wires `DATABASE_URL` to the new Postgres instance
    (see `render.yaml`'s `envVars`) — you don't set these by hand.
 3. **`CORS_ALLOWED_ORIGINS`** is intentionally left blank (`sync: false` in the blueprint) since
@@ -95,10 +100,14 @@ since it's set once as an env var, not regenerated per request).
 
 ## Costs and limits worth knowing before you commit to this path
 
-- Render's free web service tier spins down after inactivity and takes ~30–60s to wake on the
-  next request — fine for a demo, noticeable if you want it always warm (paid tier removes this).
-  Free Postgres instances also expire after a fixed period on some Render plans — check current
-  terms before relying on this for anything long-lived.
+- The web service runs on Render's Starter plan (~$7/mo) specifically for persistent-disk
+  support — see the note at the top of Step 1. It does not spin down from inactivity the way
+  the free tier does, so no cold-start delay either.
+- Render's free Postgres instances expire after a fixed period (historically 30 days on Render's
+  free database plan) — check current terms on Render's pricing page. If you want the database
+  itself to be long-lived and not just the disk, budget for a paid Postgres plan too; this
+  project's `render.yaml` currently leaves the database on the free plan since only the web
+  service actually required the paid tier (for the disk).
 - Vercel's free tier is generous for a static SPA like this one; no concerns there.
 - Nothing here touches real money or live trading — the highest-stakes secret is `JWT_SECRET`
   (Render generates and stores it for you) and whatever email/password real users register with,
