@@ -8,6 +8,11 @@
 # `models/` -- this avoids hardcoding Render's absolute filesystem prefix (which this project
 # can't verify without a real account) while still surviving redeploys. Re-run once by hand.
 #
+# The symlinks are created in startCommand, not buildCommand: Render builds run in a separate,
+# sandboxed builder where the persistent disk isn't attached yet (confirmed by a real deploy --
+# `mkdir /data` failed there with "Read-only file system"). The disk only attaches once the
+# service actually starts, so that's the only place `/data` is writable.
+#
 # plan: starter (not free) -- Render's free-tier web services don't support persistent disks at
 # all ("disks are not supported for free tier services"), and this project needs one: without a
 # disk, data/models would need regenerating from scratch every time a free-tier service spins
@@ -18,19 +23,28 @@ services:
     runtime: python
     plan: starter
     buildCommand: >-
+      cd backend &&
+      pip install torch --index-url https://download.pytorch.org/whl/cpu &&
+      pip install -r requirements.txt
+    startCommand: >-
       mkdir -p /data/mip-data /data/mip-models &&
       ln -sfn /data/mip-data ./data &&
       ln -sfn /data/mip-models ./models &&
       cd backend &&
-      pip install torch --index-url https://download.pytorch.org/whl/cpu &&
-      pip install -r requirements.txt
-    startCommand: cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+      uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     disk:
       name: mip-data
       mountPath: /data
       sizeGB: 1
     envVars:
+      - key: PYTHON_VERSION
+        # Pinned to match the exact version this project was built and tested against locally
+        # (see docs/testing.md's coverage output) -- Render otherwise defaults to whatever its
+        # latest available Python is (3.14.3 as of this writing), which is new enough that some
+        # pinned dependencies (torch, numpy, pandas, scikit-learn) may not ship prebuilt wheels
+        # for it yet.
+        value: 3.13.14
       - key: APP_ENV
         value: production
       - key: JWT_SECRET

@@ -39,6 +39,17 @@ needing to be regenerated from scratch every time the service spins down from in
    plus the `market-intelligence-platform-db` Postgres database (free plan — Postgres itself
    doesn't need a disk to persist, so it can stay free; see the note below on its own limits).
    Apply it.
+
+   **Two real failures hit on the first actual deploy, both already fixed in `render.yaml`,
+   left here in case a future change reintroduces either:**
+   - `mkdir: cannot create directory '/data': Read-only file system` during the build step —
+     Render's build runs in a separate, sandboxed builder that doesn't have the persistent disk
+     attached; it only attaches once the service actually starts. Fixed by moving the disk
+     symlink setup from `buildCommand` into `startCommand`.
+   - Render defaulted to Python 3.14.3 (visible in the build log's "Using Python version..."
+     line), new enough that some pinned dependencies risk not having prebuilt wheels yet. Fixed
+     by pinning `PYTHON_VERSION` to `3.13.14` — the exact version this project was built and
+     tested against locally.
 2. Render auto-generates `JWT_SECRET` and wires `DATABASE_URL` to the new Postgres instance
    (see `render.yaml`'s `envVars`) — you don't set these by hand.
 3. **`CORS_ALLOWED_ORIGINS`** is intentionally left blank (`sync: false` in the blueprint) since
