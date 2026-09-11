@@ -40,8 +40,8 @@ needing to be regenerated from scratch every time the service spins down from in
    doesn't need a disk to persist, so it can stay free; see the note below on its own limits).
    Apply it.
 
-   **Two real failures hit on the first actual deploy, both already fixed in `render.yaml`,
-   left here in case a future change reintroduces either:**
+   **Three real failures hit getting the first actual deploy fully working, all already fixed
+   in `render.yaml`, left here in case a future change reintroduces one:**
    - `mkdir: cannot create directory '/data': Read-only file system` during the build step —
      Render's build runs in a separate, sandboxed builder that doesn't have the persistent disk
      attached; it only attaches once the service actually starts. Fixed by moving the disk
@@ -50,6 +50,16 @@ needing to be regenerated from scratch every time the service spins down from in
      line), new enough that some pinned dependencies risk not having prebuilt wheels yet. Fixed
      by pinning `PYTHON_VERSION` to `3.13.14` — the exact version this project was built and
      tested against locally.
+   - The pipeline ran without errors but the API kept 404ing — `ln -sfn /data/mip-data ./data`
+     silently did the wrong thing because this repo commits an empty `data/` directory (a
+     `.gitkeep` placeholder, so the folder *structure* is tracked even though its contents are
+     gitignored). When the symlink's target path already exists as a real directory, `ln`
+     creates the symlink *inside* it (`./data/mip-data`) instead of replacing `./data` itself —
+     so the pipeline was writing to the real, ephemeral, git-checked-out `data/` directory the
+     whole time, not the persistent disk. Fixed by `rm -rf ./data ./models` immediately before
+     the `ln -sfn` calls in `startCommand`. Diagnosed by running `ls -la data` in Render's Shell
+     and noticing `raw/`/`processed/`/`features/` sitting as ordinary directories next to an
+     unused `mip-data -> /data/mip-data` symlink.
 2. Render auto-generates `JWT_SECRET` and wires `DATABASE_URL` to the new Postgres instance
    (see `render.yaml`'s `envVars`) — you don't set these by hand.
 3. **`CORS_ALLOWED_ORIGINS`** is intentionally left blank (`sync: false` in the blueprint) since

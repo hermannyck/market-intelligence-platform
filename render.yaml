@@ -13,6 +13,17 @@
 # `mkdir /data` failed there with "Read-only file system"). The disk only attaches once the
 # service actually starts, so that's the only place `/data` is writable.
 #
+# `rm -rf ./data ./models` BEFORE the `ln -sfn` calls is required, not optional: this repo
+# commits empty `data/`/`models/` directories (with `.gitkeep` placeholders, so the structure
+# exists in git even though their contents are gitignored). `ln -sfn target ./data` behaves
+# completely differently when `./data` already exists as a real directory -- instead of
+# replacing it with a symlink, `ln` creates the symlink *inside* it (`./data/mip-data`),
+# silently leaving the real, ephemeral, git-checked-out `data/` directory as what everything
+# actually reads/writes. Confirmed by a real deploy: `ls -la data` showed `features/`,
+# `processed/`, `raw/` as ordinary directories sitting next to a `mip-data -> /data/mip-data`
+# symlink nobody was using. The `rm -rf` first ensures `ln -sfn` lands exactly on `./data`
+# and `./models` themselves.
+#
 # plan: starter (not free) -- Render's free-tier web services don't support persistent disks at
 # all ("disks are not supported for free tier services"), and this project needs one: without a
 # disk, data/models would need regenerating from scratch every time a free-tier service spins
@@ -28,6 +39,7 @@ services:
       pip install -r requirements.txt
     startCommand: >-
       mkdir -p /data/mip-data /data/mip-models &&
+      rm -rf ./data ./models &&
       ln -sfn /data/mip-data ./data &&
       ln -sfn /data/mip-models ./models &&
       cd backend &&
