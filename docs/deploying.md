@@ -29,18 +29,19 @@ is the other documented option (more control, more maintenance) — not covered 
 ## 1. Backend + database (Render)
 
 This repo includes `render.yaml` (a [Blueprint](https://render.com/docs/blueprint-spec)) that
-defines the API service and a Postgres instance together. The web service is on Render's
-**Starter plan (~$7/mo)**, not free — free-tier web services don't support persistent disks at
-all, and this project needs one so `data/`/`models/` survive restarts and redeploys instead of
-needing to be regenerated from scratch every time the service spins down from inactivity.
+defines the API service and a Postgres instance together. The web service needs a paid plan,
+not free — free-tier web services don't support persistent disks at all, and this project needs
+one so `data/`/`models/` survive restarts and redeploys instead of needing to be regenerated
+from scratch every time the service spins down from inactivity. It's currently on **Pro**, after
+**Starter (512MB RAM, ~$7/mo)** was tried first and measured too small for real traffic — see
+the fourth failure below.
 
 1. Render dashboard → **New +** → **Blueprint** → connect the GitHub repo → Render reads
-   `render.yaml` and proposes the `market-intelligence-platform-api` web service (Starter plan)
-   plus the `market-intelligence-platform-db` Postgres database (free plan — Postgres itself
-   doesn't need a disk to persist, so it can stay free; see the note below on its own limits).
-   Apply it.
+   `render.yaml` and proposes the `market-intelligence-platform-api` web service plus the
+   `market-intelligence-platform-db` Postgres database (free plan — Postgres itself doesn't need
+   a disk to persist, so it can stay free; see the note below on its own limits). Apply it.
 
-   **Three real failures hit getting the first actual deploy fully working, all already fixed
+   **Four real failures hit getting the first actual deploy fully working, all already fixed
    in `render.yaml`, left here in case a future change reintroduces one:**
    - `mkdir: cannot create directory '/data': Read-only file system` during the build step —
      Render's build runs in a separate, sandboxed builder that doesn't have the persistent disk
@@ -60,6 +61,14 @@ needing to be regenerated from scratch every time the service spins down from in
      the `ln -sfn` calls in `startCommand`. Diagnosed by running `ls -la data` in Render's Shell
      and noticing `raw/`/`processed/`/`features/` sitting as ordinary directories next to an
      unused `mip-data -> /data/mip-data` symlink.
+   - **Starter's 512MB RAM wasn't enough — confirmed live, not assumed.** Render emailed "Web
+     Service exceeded its memory limit... automatic restart" during normal use, and large
+     requests like Historical Replay's `market-analysis` fetch (`limit=25000`) came back as a
+     flat `502`, taking `/health` down with them. SSH'd in (`ps -eo rss,args | grep uvicorn`) and
+     measured the uvicorn process at **~488MB RSS after a single `/api/predictions` request** —
+     pandas/scikit-learn/xgboost/shap import overhead plus 4 loaded `.joblib` models, before any
+     request-specific data even enters the picture. Fixed by upgrading the web service's plan to
+     **Pro**.
 2. Render auto-generates `JWT_SECRET` and wires `DATABASE_URL` to the new Postgres instance
    (see `render.yaml`'s `envVars`) — you don't set these by hand.
 3. **`CORS_ALLOWED_ORIGINS`** is intentionally left blank (`sync: false` in the blueprint) since
@@ -121,9 +130,11 @@ since it's set once as an env var, not regenerated per request).
 
 ## Costs and limits worth knowing before you commit to this path
 
-- The web service runs on Render's Starter plan (~$7/mo) specifically for persistent-disk
-  support — see the note at the top of Step 1. It does not spin down from inactivity the way
-  the free tier does, so no cold-start delay either.
+- The web service runs on Render's Pro plan, chosen for RAM headroom after Starter's 512MB
+  measurably wasn't enough (see Step 1's fourth failure) — persistent-disk support alone only
+  requires a paid plan, not specifically Pro; Starter would suffice disk-wise but not
+  memory-wise for this app's actual import/model-loading footprint. Neither Starter nor Pro
+  spins down from inactivity the way the free tier does, so no cold-start delay either way.
 - Render's free Postgres instances expire after a fixed period (historically 30 days on Render's
   free database plan) — check current terms on Render's pricing page. If you want the database
   itself to be long-lived and not just the disk, budget for a paid Postgres plan too; this

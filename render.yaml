@@ -24,15 +24,20 @@
 # symlink nobody was using. The `rm -rf` first ensures `ln -sfn` lands exactly on `./data`
 # and `./models` themselves.
 #
-# plan: starter (not free) -- Render's free-tier web services don't support persistent disks at
-# all ("disks are not supported for free tier services"), and this project needs one: without a
-# disk, data/models would need regenerating from scratch every time a free-tier service spins
-# down from inactivity and back up (see docs/deploying.md's cost/limits section).
+# plan: pro -- free-tier web services don't support persistent disks at all ("disks are not
+# supported for free tier services"), and this project needs one: without a disk, data/models
+# would need regenerating from scratch every time a free-tier service spins down from
+# inactivity and back up (see docs/deploying.md's cost/limits section). Starter's 512MB was
+# tried first and measured too small for real use: a single /api/predictions request alone put
+# the uvicorn process at ~488MB (pandas/scikit-learn/xgboost/shap imports + 4 loaded models),
+# and large requests like Historical Replay's ~17k-bar fetches OOM-killed the instance outright
+# (confirmed live: those requests came back 502, and `/health` itself went down with them) --
+# see docs/deploying.md's deploy-failures log for the measurements.
 services:
   - type: web
     name: market-intelligence-platform-api
     runtime: python
-    plan: starter
+    plan: pro
     buildCommand: >-
       cd backend &&
       pip install torch --index-url https://download.pytorch.org/whl/cpu &&
