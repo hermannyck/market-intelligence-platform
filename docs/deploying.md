@@ -116,6 +116,16 @@ the fourth failure below.
 4. Deploy. Vercel gives you a URL like `https://<project>.vercel.app` (and a preview URL per
    branch/PR — both are worth allowing in CORS, see below).
 
+   **Real failure hit on first deploy**: the root path (`/`) loaded fine, but navigating
+   directly to any other route — `/login`, or refreshing while on `/market-analysis`, etc. —
+   returned Vercel's `404: NOT_FOUND`. This is a standard SPA-on-a-static-host gap: Vercel's
+   file server looks for an actual file/directory matching the path, finds none (React Router
+   handles `/login` entirely client-side, there's no real `login` file), and 404s instead of
+   falling back to `index.html` so the client-side router can take over. Fixed by adding
+   `frontend/vercel.json` with a catch-all rewrite (`"source": "/(.*)", "destination":
+   "/index.html"`). Confirmed in the live browser: `/login` 404'd before this file existed,
+   loaded correctly after redeploying with it.
+
 ## 3. Connect the two: CORS
 
 Back in Render → the API service → **Environment** → set `CORS_ALLOWED_ORIGINS` to your real
