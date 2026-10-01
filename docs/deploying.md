@@ -111,8 +111,13 @@ the fourth failure below.
 1. Vercel dashboard → **Add New** → **Project** → import the same GitHub repo.
 2. **Root Directory**: set to `frontend` (this is a monorepo — Vercel needs to know the app
    isn't at the repo root). Framework preset should auto-detect as Vite.
-3. **Environment Variables** → add `VITE_API_BASE_URL` = `https://<your-service>.onrender.com`
-   (the Render URL from Step 1, no trailing slash).
+3. **Environment Variables** → add a variable with **Key** `VITE_API_BASE_URL` and **Value**
+   `https://<your-service>.onrender.com` (the Render URL from Step 1, no trailing slash, and
+   only the URL — not `VITE_API_BASE_URL = ...`, Vercel's form already has separate Key/Value
+   fields). Since this isn't actually sensitive (anyone using the deployed app can see it in
+   their browser's network tab regardless), set its **Type** to **Config**/Plaintext rather
+   than the default Secret — see the failure below for why that choice matters more than it
+   looks like it should.
 4. Deploy. Vercel gives you a URL like `https://<project>.vercel.app` (and a preview URL per
    branch/PR — both are worth allowing in CORS, see below).
 
@@ -125,6 +130,32 @@ the fourth failure below.
    `frontend/vercel.json` with a catch-all rewrite (`"source": "/(.*)", "destination":
    "/index.html"`). Confirmed in the live browser: `/login` 404'd before this file existed,
    loaded correctly after redeploying with it.
+
+   **Second real failure, much harder to diagnose**: `VITE_API_BASE_URL`'s value got pasted
+   wrong on first entry (the whole "`KEY = value`" line, not just the value — `Settings →
+   Environment Variables` has separate Key/Value fields, easy to paste into the wrong one).
+   Fixing it looked straightforward — edit the variable, correct the value, save, redeploy
+   with build cache disabled — but the deployed JS bundle **kept the old garbled value baked
+   in** through two full redeploys. Vercel's dashboard consistently displayed the corrected
+   value when reopening the edit panel, which looked like confirmation it had saved. It
+   hadn't: the variable's type was **Secret**, which Vercel treats as write-only once saved —
+   editing a Secret and seeing the new text echoed back is not proof it persisted server-side.
+   Diagnosed by **bypassing the dashboard UI entirely** and inspecting the deployed artifact
+   directly from the browser console:
+   ```js
+   const html = await fetch('https://<your-app>.vercel.app/?t=' + Date.now(), {cache: 'no-store'}).then(r => r.text());
+   const bundleUrl = html.match(/\/assets\/index-[^"']+\.js/)[0];
+   const code = await fetch('https://<your-app>.vercel.app' + bundleUrl).then(r => r.text());
+   code.slice(code.indexOf('onrender.com') - 60, code.indexOf('onrender.com') + 15); // shows exactly what's baked in
+   ```
+   This confirmed the live, just-redeployed bundle still had the broken string — not a CDN
+   caching artifact (`x-vercel-cache: MISS`, fresh bundle hash each time), a genuinely wrong
+   build input. Fixed by **deleting the variable entirely and recreating it from scratch** as
+   type **Config** (selectable only for a new variable — an existing Secret can't be converted,
+   per Vercel's own UI) with the correct value, then one more cache-disabled redeploy. The same
+   bundle-inspection snippet confirmed the fix before any further browser testing — worth
+   reusing any time a Vercel env var change doesn't seem to be taking effect and the dashboard
+   itself isn't giving a trustworthy answer.
 
 ## 3. Connect the two: CORS
 
