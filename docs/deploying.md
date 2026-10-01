@@ -68,7 +68,16 @@ the fourth failure below.
      measured the uvicorn process at **~488MB RSS after a single `/api/predictions` request** —
      pandas/scikit-learn/xgboost/shap import overhead plus 4 loaded `.joblib` models, before any
      request-specific data even enters the picture. Fixed by upgrading the web service's plan to
-     **Pro**.
+     **Pro** (4GB RAM vs Starter's 512MB) — re-confirmed live afterward by re-running the exact
+     requests that previously 502'd (`market-analysis` at `limit=25000` for two different H1
+     assets, `predictions`, `backtesting`), all returned `200`, and peak memory under that load
+     measured 862MB against the new 4,295MB ceiling (`memory.peak` via cgroup) — comfortable
+     headroom, not a narrow squeak-by. One wrinkle hit along the way: right after changing the
+     plan in the Render dashboard, the running instance's cgroup memory limit was still exactly
+     512MB (`memory.max` unchanged) — the dashboard plan change hadn't actually propagated to
+     the live container yet. Re-checking a bit later showed the limit correctly at 4,295MB
+     (4096MB) with no separate action needed, so this looks like normal propagation delay rather
+     than something requiring a manual restart — worth a brief wait-and-recheck if this recurs.
 2. Render auto-generates `JWT_SECRET` and wires `DATABASE_URL` to the new Postgres instance
    (see `render.yaml`'s `envVars`) — you don't set these by hand.
 3. **`CORS_ALLOWED_ORIGINS`** is intentionally left blank (`sync: false` in the blueprint) since
